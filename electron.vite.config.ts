@@ -1,0 +1,154 @@
+import { defineConfig, externalizeDepsPlugin, loadEnv } from 'electron-vite'
+import { codeInspectorPlugin } from 'code-inspector-plugin'
+import { resolve, normalize, dirname } from 'node:path'
+import tailwindcss from '@tailwindcss/vite'
+
+import injectProcessEnvPlugin from 'rollup-plugin-inject-process-env'
+import tsconfigPathsPlugin from 'vite-tsconfig-paths'
+import reactPlugin from '@vitejs/plugin-react-swc'
+
+import { settings } from './src/renderer/lib/electron-router-dom'
+import { main, resources, version } from './package.json'
+
+const [nodeModules, devFolder] = normalize(dirname(main)).split(/\/|\\/g)
+const devPath = [nodeModules, devFolder].join('/')
+
+const tsconfigPaths = tsconfigPathsPlugin({
+  projects: [resolve('tsconfig.json')],
+})
+
+export default defineConfig(({ mode }) => {
+  // Load environment variables based on mode
+  const env = loadEnv(mode)
+
+  // Determine environment
+  const isDev = mode === 'development'
+  const isProd = mode === 'production'
+
+  return {
+    main: {
+      mode: 'es2022',
+      plugins: [tsconfigPaths, externalizeDepsPlugin()],
+
+      define: {
+        'process.env.NODE_ENV': JSON.stringify(mode),
+        __APP_VERSION__: JSON.stringify(version),
+        __APP_NAME__: JSON.stringify(env.VITE_APP_NAME || 'Plexus'),
+        __IS_DEV__: isDev,
+        __IS_PROD__: isProd,
+        // Feature flags (build-time)
+        __FEATURE_COST_TRACKING__: env.VITE_FEATURE_COST_TRACKING === 'true',
+        __FEATURE_AI_INSIGHTS__: env.VITE_FEATURE_AI_INSIGHTS === 'true',
+        __FEATURE_WEBHOOKS__: env.VITE_FEATURE_WEBHOOKS === 'true',
+        __FEATURE_EXPERIMENTAL_UI__: env.VITE_FEATURE_EXPERIMENTAL_UI === 'true',
+        __FEATURE_VERBOSE_LOGGING__: env.VITE_FEATURE_VERBOSE_LOGGING === 'true',
+      },
+
+      build: {
+        minify: isProd,
+        sourcemap: isDev,
+        rollupOptions: {
+          input: {
+            index: resolve('src/main/index.ts'),
+          },
+          output: {
+            dir: resolve(devPath, 'main'),
+            format: 'es',
+          },
+        },
+      },
+    },
+
+  // Agent scripts for Claude Code integration (standalone build)
+  // Note: These are built separately as they run outside the Electron context
+  // Build command: npx esbuild src/agent-scripts/plexus-hook.ts --bundle --platform=node --outfile=dist/hooks/plexus-hook.js
+
+    preload: {
+      mode: 'es2022',
+      plugins: [tsconfigPaths, externalizeDepsPlugin()],
+
+      define: {
+        'process.env.NODE_ENV': JSON.stringify(mode),
+      },
+
+      build: {
+        minify: isProd,
+        sourcemap: isDev,
+        rollupOptions: {
+          output: {
+            dir: resolve(devPath, 'preload'),
+          },
+        },
+      },
+    },
+
+    renderer: {
+      define: {
+        'process.env.NODE_ENV': JSON.stringify(mode),
+        'process.platform': JSON.stringify(process.platform),
+        __APP_VERSION__: JSON.stringify(version),
+        __APP_NAME__: JSON.stringify(env.VITE_APP_NAME || 'Plexus'),
+        __IS_DEV__: isDev,
+        __IS_PROD__: isProd,
+        // Feature flags (build-time) for tree-shaking
+        __FEATURE_COST_TRACKING__: env.VITE_FEATURE_COST_TRACKING === 'true',
+        __FEATURE_AI_INSIGHTS__: env.VITE_FEATURE_AI_INSIGHTS === 'true',
+        __FEATURE_WEBHOOKS__: env.VITE_FEATURE_WEBHOOKS === 'true',
+        __FEATURE_EXPERIMENTAL_UI__: env.VITE_FEATURE_EXPERIMENTAL_UI === 'true',
+        __FEATURE_VERBOSE_LOGGING__: env.VITE_FEATURE_VERBOSE_LOGGING === 'true',
+      },
+
+      server: {
+        port: settings.port,
+      },
+
+      plugins: [
+        tsconfigPaths,
+        tailwindcss(),
+        // Code inspector only in development
+        ...(isDev
+          ? [
+              codeInspectorPlugin({
+                bundler: 'vite',
+                hotKeys: ['altKey'],
+                hideConsole: true,
+              }),
+            ]
+          : []),
+        reactPlugin(),
+      ],
+
+      publicDir: resolve(resources, 'public'),
+
+      build: {
+        minify: isProd ? 'esbuild' : false,
+        sourcemap: isDev,
+        outDir: resolve(devPath, 'renderer'),
+
+        rollupOptions: {
+          plugins: [
+            injectProcessEnvPlugin({
+              NODE_ENV: mode,
+              platform: process.platform,
+            }),
+          ],
+
+          input: {
+            index: resolve('src/renderer/index.html'),
+          },
+
+          output: {
+            dir: resolve(devPath, 'renderer'),
+            // Production optimizations
+            ...(isProd && {
+              manualChunks: {
+                vendor: ['react', 'react-dom', 'react-router-dom'],
+                ui: ['framer-motion', 'lucide-react'],
+              },
+            }),
+          },
+        },
+      },
+    },
+  }
+})

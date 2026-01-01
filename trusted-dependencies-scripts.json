@@ -1,0 +1,12 @@
+[
+  "esbuild",
+  "electron",
+  "electron-vite",
+  "@biomejs/biome",
+  "@tailwindcss/oxide",
+  "@swc/core",
+  "electron-winstaller",
+  "node-pty",
+  "lefthook",
+  "better-sqlite3"
+]

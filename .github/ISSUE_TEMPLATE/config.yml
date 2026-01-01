@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Discussions
+    url: https://github.com/JinmuGo/plexus/discussions
+    about: Ask questions and share ideas in Discussions
+  - name: Security Vulnerabilities
+    url: https://github.com/JinmuGo/plexus/blob/main/SECURITY.md
+    about: Report security vulnerabilities privately
