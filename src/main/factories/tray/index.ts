@@ -1,0 +1,1 @@
+export { createTrayManager } from './create'

@@ -1,0 +1,85 @@
+name: Build
+
+on:
+  workflow_call:
+    inputs:
+      upload-artifacts:
+        description: "Upload build artifacts"
+        type: boolean
+        default: true
+
+jobs:
+  build:
+    name: Build (${{ matrix.os }}-${{ matrix.arch }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            arch: arm64
+          - os: macos-15
+            arch: x64
+          - os: ubuntu-latest
+            arch: x64
+          - os: windows-latest
+            arch: x64
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Configure git
+        run: git config --global core.autocrlf input
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          # Use Node.js 20 on Windows due to node-pty compilation issues with newer MSVC
+          # See: https://github.com/microsoft/node-pty/issues/683
+          node-version: ${{ runner.os == 'Windows' && '20' || '22' }}
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Linux build tools
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libarchive-tools rpm
+
+      - name: Build (macOS)
+        if: runner.os == 'macOS'
+        env:
+          # Disable auto code signing discovery - use ad-hoc signing
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+        run: pnpm build --${{ matrix.arch }} --publish never
+
+      - name: Build (Windows)
+        if: runner.os == 'Windows'
+        run: pnpm build --${{ matrix.arch }} --publish never
+
+      - name: Build (Linux)
+        if: runner.os == 'Linux'
+        run: pnpm build --${{ matrix.arch }} --publish never
+
+      - name: Upload artifacts
+        if: inputs.upload-artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.os }}-${{ matrix.arch }}
+          path: |
+            dist/v*/*.dmg
+            dist/v*/*.zip
+            dist/v*/*.exe
+            dist/v*/*.deb
+            dist/v*/*.rpm
+            dist/v*/*.AppImage
+            dist/v*/*.pacman
+            dist/v*/latest*.yml
+          if-no-files-found: ignore

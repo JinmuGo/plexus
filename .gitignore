@@ -1,0 +1,43 @@
+# dependencies
+/node_modules
+
+# testing
+/coverage
+
+# production
+/build
+/dist
+/out
+
+# IDE
+.vscode/
+.idea/
+
+# misc
+.DS_Store
+
+# Environment variables (contain sensitive data)
+.env
+.env.development
+.env.production
+.env.local
+.env.*.local
+.eslintcache
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# electron-vite temp files
+electron.vite.config.*.mjs
+
+# Auto Claude data directory
+.auto-claude/
+
+# Third-party extensions (download separately for development)
+src/main/extensions/
+
+# documentation
+docs/
