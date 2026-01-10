@@ -40,7 +40,7 @@ export function QuestionDisplay({
 
       {/* Question */}
       <div className="flex gap-2">
-        <MessageCircleQuestion className="h-4 w-4 shrink-0 mt-0.5 text-blue-400" />
+        <MessageCircleQuestion className="h-4 w-4 shrink-0 mt-0.5 text-status-thinking" />
         <p className="text-sm">{question.question}</p>
       </div>
 

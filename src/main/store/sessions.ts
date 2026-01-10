@@ -970,11 +970,18 @@ class SessionStore {
       // Fix #8: Improved Cursor inactivity detection with process check
       if (session.agent === 'cursor') {
         // If PID is available, check if process is alive
+        // Note: Cursor hook's PID (process.ppid) is the spawner process which terminates
+        // shortly after hook execution, NOT the Cursor IDE process itself.
+        // So we must also check inactivity time before marking as ended.
         if (session.pid && !this.isProcessAlive(session.pid)) {
-          console.log(
-            `[SessionStore] Marking dead Cursor session ${sessionId.slice(0, 8)} as ended (PID ${session.pid} not alive)`
-          )
-          this.updatePhase(sessionId, 'ended')
+          // Only mark as ended if also inactive for the stale threshold
+          // This prevents killing active sessions just because the spawner exited
+          if (inactivityTime > STALE_THRESHOLD_MS) {
+            console.log(
+              `[SessionStore] Marking dead Cursor session ${sessionId.slice(0, 8)} as ended (PID ${session.pid} not alive, ${Math.round(inactivityTime / 1000)}s inactive)`
+            )
+            this.updatePhase(sessionId, 'ended')
+          }
           continue
         }
 

@@ -45,6 +45,10 @@ async function initializeHistorySystem(isDev: boolean) {
   // Initialize stores (they share the same database)
   historyStore.initialize(dbPath)
   costStore.initialize(dbPath)
+
+  // Clean up stale ongoing sessions from previous runs
+  historyStore.cleanupOngoingSessions()
+
   historyCaptureManager.start()
   return { historyStore, costStore, historyCaptureManager }
 }

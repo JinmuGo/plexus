@@ -18,28 +18,28 @@ const STATUS_CONFIG: Record<
 > = {
   idle: {
     label: 'Idle',
-    color: 'text-green-400',
-    bgColor: 'bg-green-500/20',
+    color: 'text-status-active',
+    bgColor: 'bg-status-active/20',
   },
   thinking: {
     label: 'Thinking',
-    color: 'text-blue-400',
-    bgColor: 'bg-blue-500/20',
+    color: 'text-status-thinking',
+    bgColor: 'bg-status-thinking/20',
   },
   awaiting: {
     label: 'Awaiting',
-    color: 'text-orange-400',
-    bgColor: 'bg-orange-500/20',
+    color: 'text-status-approval',
+    bgColor: 'bg-status-approval/20',
   },
   tool_use: {
     label: 'Tool Use',
-    color: 'text-purple-400',
-    bgColor: 'bg-purple-500/20',
+    color: 'text-primary',
+    bgColor: 'bg-primary/20',
   },
   error: {
     label: 'Error',
-    color: 'text-red-400',
-    bgColor: 'bg-red-500/20',
+    color: 'text-status-error',
+    bgColor: 'bg-status-error/20',
   },
 }
 

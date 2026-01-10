@@ -126,3 +126,70 @@ export function generateToolUseId(
   const timeBucket = Math.floor(Date.now() / 1000)
   return `${agent}_${sessionId.slice(0, 8)}_${toolName}_${timeBucket}`
 }
+
+// ============================================================================
+// Event Deduplication (Hook Script Level)
+// ============================================================================
+
+/**
+ * Deduplication window in milliseconds
+ * Events with same key within this window are considered duplicates
+ */
+const DEDUP_WINDOW_MS = 100
+
+/**
+ * Recent event entry for deduplication tracking
+ */
+interface RecentEventEntry {
+  key: string
+  timestamp: number
+}
+
+/**
+ * Circular buffer for recent events (avoids array shift overhead)
+ */
+const recentEvents: RecentEventEntry[] = []
+const MAX_RECENT_EVENTS = 20
+
+/**
+ * Check if an event should be skipped as a duplicate
+ *
+ * Uses a simple time-based deduplication to prevent rapid-fire
+ * duplicate events from creating multiple socket connections.
+ *
+ * @param sessionId - Session identifier
+ * @param eventName - Event name (e.g., "PreToolUse", "PostToolUse")
+ * @param toolName - Optional tool name for tool-specific events
+ * @returns true if this event is a duplicate and should be skipped
+ */
+export function isDuplicateEvent(
+  sessionId: string,
+  eventName: string,
+  toolName?: string
+): boolean {
+  const key = `${sessionId}:${eventName}:${toolName || ''}`
+  const now = Date.now()
+
+  // Check for duplicate within window
+  for (const entry of recentEvents) {
+    if (entry.key === key && now - entry.timestamp < DEDUP_WINDOW_MS) {
+      return true // Duplicate found
+    }
+  }
+
+  // Add to recent events (circular buffer style)
+  if (recentEvents.length >= MAX_RECENT_EVENTS) {
+    // Remove oldest expired entries
+    const cutoff = now - DEDUP_WINDOW_MS
+    let writeIdx = 0
+    for (let i = 0; i < recentEvents.length; i++) {
+      if (recentEvents[i].timestamp >= cutoff) {
+        recentEvents[writeIdx++] = recentEvents[i]
+      }
+    }
+    recentEvents.length = writeIdx
+  }
+
+  recentEvents.push({ key, timestamp: now })
+  return false
+}

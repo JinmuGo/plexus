@@ -28,18 +28,18 @@ interface AgentConfig {
 const AGENT_CONFIG: Record<AgentType, AgentConfig> = {
   claude: {
     Icon: ClaudeIcon,
-    bgColor: 'bg-orange-500/20',
-    textColor: 'text-orange-400',
+    bgColor: 'bg-agent-claude/20',
+    textColor: 'text-agent-claude',
   },
   gemini: {
     Icon: GeminiIcon,
-    bgColor: 'bg-blue-500/20',
-    textColor: 'text-blue-400',
+    bgColor: 'bg-agent-gemini/20',
+    textColor: 'text-agent-gemini',
   },
   cursor: {
     Icon: CursorIcon,
-    bgColor: 'bg-purple-500/20',
-    textColor: 'text-purple-400',
+    bgColor: 'bg-agent-cursor/20',
+    textColor: 'text-agent-cursor',
   },
 }
 

@@ -75,8 +75,8 @@ export function EditInputDialog({
           <DialogTitle>Edit Tool Input</DialogTitle>
           <DialogDescription>
             Modify the input for{' '}
-            <span className="font-mono text-orange-400">{toolName}</span> before
-            allowing execution.
+            <span className="font-mono text-status-approval">{toolName}</span>{' '}
+            before allowing execution.
           </DialogDescription>
         </DialogHeader>
 
@@ -104,11 +104,7 @@ export function EditInputDialog({
             <X className="h-4 w-4 mr-1" />
             Cancel
           </Button>
-          <Button
-            className="bg-green-600 hover:bg-green-700"
-            disabled={!isValid}
-            onClick={handleConfirm}
-          >
+          <Button disabled={!isValid} onClick={handleConfirm} variant="allow">
             <Check className="h-4 w-4 mr-1" />
             Allow with Changes
           </Button>

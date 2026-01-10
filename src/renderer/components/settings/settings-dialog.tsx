@@ -10,6 +10,7 @@ import { Button } from 'renderer/components/ui/button'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -65,6 +66,9 @@ export function SettingsDialog({
             <Settings className="h-5 w-5" />
             Settings
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Configure application settings
+          </DialogDescription>
         </DialogHeader>
 
         <Tabs className="mt-2" defaultValue={defaultTab}>

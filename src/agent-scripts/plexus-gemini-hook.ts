@@ -100,7 +100,9 @@ function mapEventToStatus(
       return 'waiting_for_input'
 
     case 'BeforeTool':
-      return 'running_tool'
+      // BeforeTool should be treated as permission request
+      // This ensures notifications are sent even if ToolPermission notification doesn't arrive
+      return 'waiting_for_approval'
 
     case 'AfterTool':
       return 'processing'
@@ -109,9 +111,10 @@ function mapEventToStatus(
       return 'compacting'
 
     case 'Notification':
-      // Check notification type for permission requests
+      // Skip ToolPermission notifications - BeforeTool already handles permission requests
+      // This prevents duplicate socket connections for the same tool approval
       if (notificationType === 'ToolPermission') {
-        return 'waiting_for_approval'
+        return 'skip'
       }
       return 'waiting_for_input'
 
@@ -260,9 +263,10 @@ async function main(): Promise<void> {
   }
 
   // Fix #10: Generate deterministic toolUseId for server-side correlation
-  // This applies to both PreToolUse and ToolPermission events
+  // This applies to BeforeTool, PreToolUse, and ToolPermission events
   if (
-    (mappedEvent === 'PreToolUse' ||
+    (event === 'BeforeTool' ||
+      mappedEvent === 'PreToolUse' ||
       (event === 'Notification' && notificationType === 'ToolPermission')) &&
     !hookEvent.toolUseId &&
     toolName
@@ -270,8 +274,12 @@ async function main(): Promise<void> {
     hookEvent.toolUseId = generateToolUseId('gemini', sessionId, toolName)
   }
 
-  // Handle permission requests (Notification with ToolPermission)
-  if (event === 'Notification' && notificationType === 'ToolPermission') {
+  // Handle permission requests (BeforeTool or Notification with ToolPermission)
+  const isPermissionRequest =
+    event === 'BeforeTool' ||
+    (event === 'Notification' && notificationType === 'ToolPermission')
+
+  if (isPermissionRequest) {
     // Question tools should NOT be handled as permission requests
     // Let Gemini CLI show its native question UI
     if (isQuestionTool(toolName)) {
@@ -318,6 +326,10 @@ async function main(): Promise<void> {
     }
 
     // No response - let Gemini CLI show its normal UI
+    const output: GeminiHookOutput = {
+      decision: 'ask',
+    }
+    console.log(JSON.stringify(output))
     process.exit(0)
   }
 

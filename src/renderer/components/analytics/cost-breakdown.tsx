@@ -17,16 +17,16 @@ interface CostBreakdownProps {
   maxItems?: number
 }
 
-// Color palette for different items
+// Color palette using design system chart colors
 const COLORS = [
-  'bg-blue-500',
-  'bg-purple-500',
-  'bg-amber-500',
-  'bg-green-500',
-  'bg-rose-500',
-  'bg-cyan-500',
-  'bg-orange-500',
-  'bg-indigo-500',
+  'bg-chart-1',
+  'bg-chart-2',
+  'bg-chart-3',
+  'bg-chart-4',
+  'bg-chart-5',
+  'bg-primary',
+  'bg-accent',
+  'bg-status-thinking',
 ]
 
 function formatCost(cost: number): string {

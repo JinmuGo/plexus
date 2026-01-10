@@ -18,11 +18,11 @@ interface LogViewerProps {
 }
 
 const STATUS_CONFIG: Record<AgentStatus, { label: string; color: string }> = {
-  idle: { label: 'Idle', color: 'text-green-400' },
-  thinking: { label: 'Thinking', color: 'text-blue-400' },
-  awaiting: { label: 'Awaiting Input', color: 'text-orange-400' },
-  tool_use: { label: 'Tool Use', color: 'text-purple-400' },
-  error: { label: 'Error', color: 'text-red-400' },
+  idle: { label: 'Idle', color: 'text-status-active' },
+  thinking: { label: 'Thinking', color: 'text-status-thinking' },
+  awaiting: { label: 'Awaiting Input', color: 'text-status-approval' },
+  tool_use: { label: 'Tool Use', color: 'text-primary' },
+  error: { label: 'Error', color: 'text-status-error' },
 }
 
 export function LogViewer({ session, output, onClose }: LogViewerProps) {

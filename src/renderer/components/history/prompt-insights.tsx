@@ -28,6 +28,7 @@ import { Badge } from 'renderer/components/ui/badge'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -769,6 +770,9 @@ export function PromptInsights() {
               <Sparkles className="w-5 h-5 text-amber-500" />
               Improved Prompt
             </DialogTitle>
+            <DialogDescription className="sr-only">
+              AI-improved version of the selected prompt
+            </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">

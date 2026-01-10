@@ -58,7 +58,7 @@ function TrendBadge({ change }: { change: number }) {
     <span
       className={cn(
         'flex items-center gap-0.5 text-xs',
-        isPositive ? 'text-red-500' : 'text-green-500'
+        isPositive ? 'text-status-error' : 'text-status-active'
       )}
     >
       {isPositive ? (
@@ -82,11 +82,11 @@ export function CostSummaryCards({
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
       {/* Today */}
-      <Card className="bg-gradient-to-br from-amber-500/10 to-amber-500/5 border-amber-500/20">
+      <Card className="bg-gradient-to-br from-chart-3/15 to-chart-3/5 border-chart-3/30">
         <CardContent className="pt-4">
           <div className="flex items-center justify-between">
-            <div className="p-2 rounded-lg bg-amber-500/20">
-              <DollarSign className="w-4 h-4 text-amber-500" />
+            <div className="p-2 rounded-lg bg-chart-3/20">
+              <DollarSign className="w-4 h-4 text-chart-3" />
             </div>
           </div>
           <div className="mt-3">
@@ -100,11 +100,11 @@ export function CostSummaryCards({
       </Card>
 
       {/* This Week */}
-      <Card className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 border-blue-500/20">
+      <Card className="bg-gradient-to-br from-chart-1/15 to-chart-1/5 border-chart-1/30">
         <CardContent className="pt-4">
           <div className="flex items-center justify-between">
-            <div className="p-2 rounded-lg bg-blue-500/20">
-              <Calendar className="w-4 h-4 text-blue-500" />
+            <div className="p-2 rounded-lg bg-chart-1/20">
+              <Calendar className="w-4 h-4 text-chart-1" />
             </div>
             <TrendBadge change={weekChange} />
           </div>
@@ -119,11 +119,11 @@ export function CostSummaryCards({
       </Card>
 
       {/* This Month */}
-      <Card className="bg-gradient-to-br from-purple-500/10 to-purple-500/5 border-purple-500/20">
+      <Card className="bg-gradient-to-br from-chart-4/15 to-chart-4/5 border-chart-4/30">
         <CardContent className="pt-4">
           <div className="flex items-center justify-between">
-            <div className="p-2 rounded-lg bg-purple-500/20">
-              <Calendar className="w-4 h-4 text-purple-500" />
+            <div className="p-2 rounded-lg bg-chart-4/20">
+              <Calendar className="w-4 h-4 text-chart-4" />
             </div>
             <TrendBadge change={monthChange} />
           </div>
@@ -138,11 +138,11 @@ export function CostSummaryCards({
       </Card>
 
       {/* Total Tokens */}
-      <Card className="bg-gradient-to-br from-green-500/10 to-green-500/5 border-green-500/20">
+      <Card className="bg-gradient-to-br from-chart-2/15 to-chart-2/5 border-chart-2/30">
         <CardContent className="pt-4">
           <div className="flex items-center justify-between">
-            <div className="p-2 rounded-lg bg-green-500/20">
-              <Zap className="w-4 h-4 text-green-500" />
+            <div className="p-2 rounded-lg bg-chart-2/20">
+              <Zap className="w-4 h-4 text-chart-2" />
             </div>
           </div>
           <div className="mt-3">

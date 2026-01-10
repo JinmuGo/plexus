@@ -29,6 +29,13 @@ const buttonVariants = cva(
         link: `text-primary underline-offset-4 hover:underline`,
         gradient: `bg-gradient-to-r from-primary to-accent text-white
                    hover:opacity-90 hover:shadow-lg hover:shadow-primary/25`,
+        // Semantic action variants
+        allow: `bg-status-active text-white
+                hover:bg-status-active/90 hover:shadow-lg hover:shadow-status-active/20`,
+        deny: `bg-destructive text-white
+               hover:bg-destructive/90 hover:shadow-lg hover:shadow-destructive/20`,
+        approval: `bg-status-approval text-white
+                   hover:bg-status-approval/90 hover:shadow-lg hover:shadow-status-approval/20`,
       },
       size: {
         default: 'h-9 px-4 py-2 has-[>svg]:px-3',

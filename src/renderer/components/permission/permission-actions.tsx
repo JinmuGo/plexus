@@ -134,10 +134,11 @@ export function PermissionActions({
     return (
       <div className="flex items-center gap-1.5 shrink-0">
         <Button
-          className="h-6 px-2 text-xs bg-status-active hover:bg-status-active/90"
+          className="h-6 px-2 text-xs"
           disabled={isLoading !== null}
           onClick={handleAllow}
           size="sm"
+          variant="allow"
         >
           {isLoading === 'allow' ? '...' : 'Allow'}
         </Button>
@@ -146,7 +147,7 @@ export function PermissionActions({
           disabled={isLoading !== null}
           onClick={handleDeny}
           size="sm"
-          variant="destructive"
+          variant="deny"
         >
           {isLoading === 'deny' ? '...' : 'Deny'}
         </Button>
@@ -224,7 +225,7 @@ export function PermissionActions({
       {/* Tool info */}
       <div className="text-sm">
         <span className="text-muted-foreground">Requesting: </span>
-        <span className="font-medium text-orange-400">{toolName}</span>
+        <span className="font-medium text-status-approval">{toolName}</span>
         {autoAllowedCount > 0 && (
           <span className="ml-2 text-xs text-muted-foreground">
             ({autoAllowedCount} tool{autoAllowedCount > 1 ? 's' : ''}{' '}
@@ -236,10 +237,11 @@ export function PermissionActions({
       {/* Main action buttons */}
       <div className="flex gap-2">
         <Button
-          className="flex-1 bg-green-600 hover:bg-green-700"
+          className="flex-1"
           disabled={isLoading !== null}
           onClick={handleAllow}
           size="sm"
+          variant="allow"
         >
           <Check className="h-4 w-4 mr-1" />
           {isLoading === 'allow' ? 'Allowing...' : 'Allow'}
@@ -250,7 +252,7 @@ export function PermissionActions({
           disabled={isLoading !== null}
           onClick={handleDeny}
           size="sm"
-          variant="destructive"
+          variant="deny"
         >
           <Ban className="h-4 w-4 mr-1" />
           {isLoading === 'deny' ? 'Denying...' : 'Deny'}

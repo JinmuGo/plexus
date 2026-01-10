@@ -1,5 +1,5 @@
 import { useMemo, useCallback, useState, useEffect, memo } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '../ui/button'
 import {
   DropdownMenu,
@@ -26,6 +26,12 @@ import {
   Wrench,
   ExternalLink,
   GitBranch,
+  Check,
+  X,
+  MessageCircleQuestion,
+  Coins,
+  ChevronDown,
+  Timer,
 } from 'lucide-react'
 import {
   ContextMenu,
@@ -34,10 +40,11 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from '../ui/context-menu'
-import { cardVariants } from 'renderer/lib/motion-variants'
+import { cardVariants, collapseVariants } from 'renderer/lib/motion-variants'
 import { springs } from 'renderer/lib/motion'
 import { cn } from 'renderer/lib/utils'
 import type { ClaudeSession } from 'shared/hook-types'
+import type { SessionCost } from 'shared/cost-types'
 
 const { App } = window
 
@@ -93,6 +100,19 @@ function formatBranch(branch: string, maxLength = 16): string {
   return `${branch.slice(0, maxLength - 1)}…`
 }
 
+// Format cost for display
+function formatCost(costUsd: number): string {
+  if (costUsd < 0.01) return '<$0.01'
+  if (costUsd < 1) return `$${costUsd.toFixed(2)}`
+  return `$${costUsd.toFixed(2)}`
+}
+
+// Truncate question text for inline display
+function truncateQuestion(question: string, maxLength = 60): string {
+  if (question.length <= maxLength) return question
+  return `${question.slice(0, maxLength - 1)}…`
+}
+
 // Get status border color (left border)
 function getStatusBorderColor(phase: ClaudeSession['phase']): string {
   switch (phase) {
@@ -134,15 +154,43 @@ export const ClaudeSessionTile = memo(function ClaudeSessionTile({
 }: ClaudeSessionTileProps) {
   const [showTerminateDialog, setShowTerminateDialog] = useState(false)
   const [, setTick] = useState(0)
+  const [sessionCost, setSessionCost] = useState<SessionCost | null>(null)
+  const [isPermissionLoading, setIsPermissionLoading] = useState<string | null>(
+    null
+  )
 
   const statusConfig = STATUS_CONFIG[session.phase]
   const isEnded = session.phase === 'ended'
+  const hasPermission =
+    session.phase === 'waitingForApproval' && session.activePermission
+  const hasQuestion =
+    session.phase === 'waitingForInput' && session.questionContext
 
   // Update elapsed time every 10 seconds
   useEffect(() => {
     const interval = setInterval(() => setTick(t => t + 1), 10000)
     return () => clearInterval(interval)
   }, [])
+
+  // Fetch session cost periodically (every 30 seconds or when session ends)
+  useEffect(() => {
+    const fetchCost = async () => {
+      try {
+        const cost = await App.cost.getSessionCost(session.id)
+        setSessionCost(cost)
+      } catch {
+        // Ignore errors - cost tracking is optional
+      }
+    }
+
+    fetchCost()
+
+    // Refresh cost every 30 seconds for active sessions
+    if (!isEnded) {
+      const interval = setInterval(fetchCost, 30000)
+      return () => clearInterval(interval)
+    }
+  }, [session.id, isEnded])
 
   // Get display title - prioritize first user prompt for immediate context
   const displayTitle = useMemo(() => {
@@ -201,6 +249,40 @@ export const ClaudeSessionTile = memo(function ClaudeSessionTile({
     [canFocusTerminal, handleFocusTerminal]
   )
 
+  // Permission action handlers
+  const handlePermissionAction = useCallback(
+    async (
+      decision: 'allow' | 'deny' | 'auto-allow-session',
+      e?: React.MouseEvent
+    ) => {
+      e?.stopPropagation()
+      setIsPermissionLoading(decision)
+      try {
+        await App.permissions.respond(session.id, decision)
+      } catch (error) {
+        console.error('[ClaudeSessionTile] Permission action failed:', error)
+      } finally {
+        setIsPermissionLoading(null)
+      }
+    },
+    [session.id]
+  )
+
+  const handleAllow = useCallback(
+    (e: React.MouseEvent) => handlePermissionAction('allow', e),
+    [handlePermissionAction]
+  )
+
+  const handleDeny = useCallback(
+    (e: React.MouseEvent) => handlePermissionAction('deny', e),
+    [handlePermissionAction]
+  )
+
+  const handleAutoAllow = useCallback(
+    (e: React.MouseEvent) => handlePermissionAction('auto-allow-session', e),
+    [handlePermissionAction]
+  )
+
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
@@ -248,7 +330,7 @@ export const ClaudeSessionTile = memo(function ClaudeSessionTile({
             role="button"
             tabIndex={0}
           >
-            {/* Row 1: Agent + Title + Time */}
+            {/* Row 1: Agent + Title + Cost + Time */}
             <div className="flex items-center gap-2">
               {/* Agent icon */}
               <AgentIcon agent={session.agent} className="shrink-0" size="sm" />
@@ -257,6 +339,19 @@ export const ClaudeSessionTile = memo(function ClaudeSessionTile({
               <p className="flex-1 text-sm text-foreground truncate">
                 {displayTitle}
               </p>
+
+              {/* Cost indicator (if available) */}
+              {sessionCost && sessionCost.costUsd > 0 && (
+                <span
+                  className="flex items-center gap-0.5 text-xs text-muted-foreground shrink-0"
+                  title={`Estimated cost: ${formatCost(sessionCost.costUsd)}`}
+                >
+                  <Coins className="h-3 w-3" />
+                  <span className="tabular-nums">
+                    {formatCost(sessionCost.costUsd)}
+                  </span>
+                </span>
+              )}
 
               {/* Time */}
               <span className="text-xs text-muted-foreground tabular-nums shrink-0">
@@ -374,6 +469,97 @@ export const ClaudeSessionTile = memo(function ClaudeSessionTile({
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
+
+            {/* Row 3: Inline Permission Actions (when waiting for approval) */}
+            <AnimatePresence>
+              {hasPermission && (
+                <motion.div
+                  animate="animate"
+                  className="flex items-center gap-2 pt-2 mt-1 border-t border-border/30"
+                  exit="exit"
+                  initial="initial"
+                  variants={collapseVariants}
+                >
+                  {/* Tool name */}
+                  <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                    <Wrench className="h-3.5 w-3.5 text-status-approval shrink-0" />
+                    <span className="text-xs font-medium text-status-approval truncate">
+                      {session.activePermission?.toolName}
+                    </span>
+                  </div>
+
+                  {/* Action buttons */}
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Button
+                      className="h-6 px-2 text-xs"
+                      disabled={isPermissionLoading !== null}
+                      onClick={handleAllow}
+                      size="sm"
+                      variant="allow"
+                    >
+                      <Check className="h-3 w-3 mr-1" />
+                      {isPermissionLoading === 'allow' ? '...' : 'Allow'}
+                    </Button>
+                    <Button
+                      className="h-6 px-2 text-xs"
+                      disabled={isPermissionLoading !== null}
+                      onClick={handleDeny}
+                      size="sm"
+                      variant="deny"
+                    >
+                      <X className="h-3 w-3 mr-1" />
+                      {isPermissionLoading === 'deny' ? '...' : 'Deny'}
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          className="h-6 w-6 p-0"
+                          disabled={isPermissionLoading !== null}
+                          onClick={e => e.stopPropagation()}
+                          size="sm"
+                          variant="outline"
+                        >
+                          <ChevronDown className="h-3 w-3" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={e => {
+                            e.stopPropagation()
+                            handleAutoAllow(e as unknown as React.MouseEvent)
+                          }}
+                        >
+                          <Timer className="h-4 w-4 mr-2" />
+                          Auto-allow for session
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Row 3b: Question Display (when waiting for input with question) */}
+            <AnimatePresence>
+              {hasQuestion && (
+                <motion.div
+                  animate="animate"
+                  className="flex items-center gap-2 pt-2 mt-1 border-t border-border/30"
+                  exit="exit"
+                  initial="initial"
+                  variants={collapseVariants}
+                >
+                  <MessageCircleQuestion className="h-3.5 w-3.5 text-status-thinking shrink-0" />
+                  <span
+                    className="text-xs text-muted-foreground italic truncate"
+                    title={session.questionContext?.question}
+                  >
+                    "{truncateQuestion(session.questionContext?.question || '')}
+                    "
+                  </span>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </motion.div>
       </ContextMenuTrigger>

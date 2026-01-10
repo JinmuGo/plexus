@@ -37,6 +37,15 @@ export type PermissionFailureHandler = (
 const MAX_CACHE_SIZE = 1000 // Maximum tool_use_id cache entries
 const PERMISSION_TIMEOUT_MS = 30_000 // 30 seconds timeout for pending permissions
 const CLEANUP_INTERVAL_MS = 10_000 // Check for stale permissions every 10 seconds
+const EVENT_DEBOUNCE_MS = 50 // Debounce window for non-critical events
+
+/**
+ * Debounced event entry for coalescing rapid-fire events
+ */
+interface DebouncedEventEntry {
+  event: HookEvent
+  timer: NodeJS.Timeout
+}
 
 /**
  * Socket server state
@@ -49,6 +58,8 @@ interface ServerState {
   toolUseIdCache: Map<string, string[]>
   clientCounter: number
   cleanupTimer: NodeJS.Timeout | null
+  // Debouncing state for fire-and-forget events
+  debouncedEvents: Map<string, DebouncedEventEntry>
 }
 
 const state: ServerState = {
@@ -59,6 +70,7 @@ const state: ServerState = {
   toolUseIdCache: new Map(),
   clientCounter: 0,
   cleanupTimer: null,
+  debouncedEvents: new Map(),
 }
 
 /**
@@ -321,6 +333,28 @@ function handleEvent(
     // Update event with resolved toolUseId
     const updatedEvent: HookEvent = { ...event, toolUseId }
 
+    // Check for existing pending permission with same toolUseId
+    // This handles duplicate requests from BeforeTool + ToolPermission notification
+    const existingPending = state.pendingPermissions.get(toolUseId) as
+      | (PendingPermission & { socket?: net.Socket })
+      | undefined
+
+    if (existingPending) {
+      console.log(
+        `[HookSocket] Duplicate permission request for ${event.sessionId.slice(0, 8)} tool:${toolUseId.slice(0, 12)} - closing old socket, using new one`
+      )
+      // Close the old socket (will return 'ask' to let Gemini CLI handle it)
+      if (existingPending.socket && !existingPending.socket.destroyed) {
+        try {
+          const askResponse: HookResponse = { decision: 'ask' }
+          existingPending.socket.write(JSON.stringify(askResponse))
+          existingPending.socket.end()
+        } catch {
+          existingPending.socket.destroy()
+        }
+      }
+    }
+
     // Store pending permission
     const pending: PendingPermission = {
       sessionId: event.sessionId,
@@ -334,14 +368,47 @@ function handleEvent(
     // Store socket reference on the pending object for later response
     ;(pending as PendingPermission & { socket: net.Socket }).socket = socket
 
-    // Notify handler
-    state.eventHandler?.(updatedEvent)
+    // Notify handler (only if this is the first request for this toolUseId)
+    if (!existingPending) {
+      state.eventHandler?.(updatedEvent)
+    }
     return
   }
 
   // Fire and forget for non-permission events
   socket.end()
-  state.eventHandler?.(event)
+
+  // Debounce non-critical events to coalesce rapid-fire updates
+  // Critical events: SessionStart, SessionEnd, PreToolUse are processed immediately
+  const criticalEvents = new Set([
+    'SessionStart',
+    'SessionEnd',
+    'PreToolUse',
+    'PermissionRequest',
+  ])
+
+  if (criticalEvents.has(event.event)) {
+    // Critical events bypass debouncing
+    state.eventHandler?.(event)
+    return
+  }
+
+  // Debounce key: session + status combination
+  const debounceKey = `${event.sessionId}:${event.status}`
+
+  // Cancel existing debounce timer if present
+  const existing = state.debouncedEvents.get(debounceKey)
+  if (existing) {
+    clearTimeout(existing.timer)
+  }
+
+  // Set new debounce timer - only the latest event will fire
+  const timer = setTimeout(() => {
+    state.debouncedEvents.delete(debounceKey)
+    state.eventHandler?.(event)
+  }, EVENT_DEBOUNCE_MS)
+
+  state.debouncedEvents.set(debounceKey, { event, timer })
 }
 
 /**
@@ -403,6 +470,12 @@ export function stop(): void {
     }
   }
   state.pendingPermissions.clear()
+
+  // Clear debounced events
+  for (const entry of state.debouncedEvents.values()) {
+    clearTimeout(entry.timer)
+  }
+  state.debouncedEvents.clear()
 
   // Clear cache
   state.toolUseIdCache.clear()

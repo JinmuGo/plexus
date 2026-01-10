@@ -1719,6 +1719,37 @@ class HistoryStore {
   // ============================================================================
 
   /**
+   * Clean up stale "ongoing" sessions that were never properly ended
+   * This can happen when the app crashes or sessions are not properly tracked
+   * @param maxAgeHours Maximum age in hours for ongoing sessions (default: 24)
+   * @returns Number of sessions cleaned up
+   */
+  cleanupOngoingSessions(maxAgeHours = 24): number {
+    if (!this.db) throw new Error('Database not initialized')
+
+    const cutoff = Date.now() - maxAgeHours * 60 * 60 * 1000
+
+    // Find ongoing sessions older than cutoff
+    const stmt = this.db.prepare(`
+      UPDATE sessions
+      SET ended_at = started_at + 1000,
+          duration_ms = 1000
+      WHERE ended_at IS NULL
+        AND started_at < ?
+    `)
+
+    const result = stmt.run(cutoff)
+
+    if (result.changes > 0) {
+      console.log(
+        `[HistoryStore] Cleaned up ${result.changes} stale ongoing sessions`
+      )
+    }
+
+    return result.changes
+  }
+
+  /**
    * Delete old sessions based on retention policy
    */
   cleanup(options: { maxAgeDays?: number; maxSessions?: number }): number {
