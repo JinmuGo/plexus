@@ -133,6 +133,9 @@ function mapEventToStatus(
       return 'running_tool'
     case 'PostToolUse':
       return 'processing'
+    case 'PostToolUseFailure':
+      // Tool execution failed - continue processing (agent will handle error)
+      return 'processing'
     case 'PermissionRequest':
       // Question tools should be treated as waiting for input, not approval
       if (isQuestionTool(toolName)) {
