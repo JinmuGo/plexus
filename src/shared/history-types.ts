@@ -578,3 +578,36 @@ export interface ParsedToolExecution {
   toolOutput?: string
   timestamp: number
 }
+
+// ============================================================================
+// Slash Command Types (Claude Code only)
+// ============================================================================
+
+/**
+ * Bash template type for slash commands
+ */
+export type BashTemplateType =
+  | 'none'
+  | 'git'
+  | 'gitFull'
+  | 'files'
+  | 'typescript'
+  | 'custom'
+
+/**
+ * Slash command for Claude Code
+ */
+export interface SlashCommand {
+  name: string
+  description: string
+  content: string
+  bashScript?: string
+}
+
+/**
+ * Saved slash command with metadata
+ */
+export interface SavedSlashCommand extends SlashCommand {
+  createdAt: number
+  updatedAt: number
+}

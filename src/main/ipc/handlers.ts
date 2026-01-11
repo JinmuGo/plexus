@@ -1,4 +1,5 @@
 import { ipcMain, type BrowserWindow } from 'electron'
+import { devLog } from '../lib/utils'
 import { sessionStore } from '../store/sessions'
 import { activityLogStore } from '../store/activity-log'
 import { historyStore } from '../store/history'
@@ -79,8 +80,22 @@ import {
   savePrompt,
   deleteSavedPrompt,
 } from '../ai/prompt-improver'
-import type { AISettings, SavedPrompt } from 'shared/history-types'
+import type {
+  AISettings,
+  SavedPrompt,
+  SlashCommand,
+  SavedSlashCommand,
+  BashTemplateType,
+} from 'shared/history-types'
 import type { AgentType } from 'shared/hook-types'
+import {
+  saveSlashCommand,
+  listSlashCommands,
+  deleteSlashCommand,
+  commandExists,
+  getBashTemplateContent,
+  getBashTemplateOptions,
+} from '../commands'
 import type {
   CostStatistics,
   DailyCost,
@@ -227,16 +242,14 @@ export function registerIpcHandlers(
   ipcMain.handle('permission:approve', (_, sessionId: string): boolean => {
     const session = sessionStore.get(sessionId)
     if (!session) {
-      console.warn(
+      devLog.warn(
         `[IPC] Cannot approve permission: session ${sessionId.slice(0, 8)} not found`
       )
       return false
     }
 
     respondToPermissionBySession(sessionId, 'allow')
-    console.log(
-      `[IPC] Permission approved for session ${sessionId.slice(0, 8)}`
-    )
+    devLog.log(`[IPC] Permission approved for session ${sessionId.slice(0, 8)}`)
     return true
   })
 
@@ -245,16 +258,14 @@ export function registerIpcHandlers(
     (_, sessionId: string, reason?: string): boolean => {
       const session = sessionStore.get(sessionId)
       if (!session) {
-        console.warn(
+        devLog.warn(
           `[IPC] Cannot deny permission: session ${sessionId.slice(0, 8)} not found`
         )
         return false
       }
 
       respondToPermissionBySession(sessionId, 'deny', { reason })
-      console.log(
-        `[IPC] Permission denied for session ${sessionId.slice(0, 8)}`
-      )
+      devLog.log(`[IPC] Permission denied for session ${sessionId.slice(0, 8)}`)
       return true
     }
   )
@@ -270,7 +281,7 @@ export function registerIpcHandlers(
     ): boolean => {
       const session = sessionStore.get(sessionId)
       if (!session) {
-        console.warn(
+        devLog.warn(
           `[IPC] Cannot respond to permission: session ${sessionId.slice(0, 8)} not found`
         )
         return false
@@ -281,7 +292,7 @@ export function registerIpcHandlers(
         const toolName = session.activePermission.toolName
         autoAllowStore.addAutoAllow(sessionId, toolName)
         respondToPermissionBySession(sessionId, 'allow')
-        console.log(
+        devLog.log(
           `[IPC] Auto-allowed '${toolName}' for session ${sessionId.slice(0, 8)}`
         )
         return true
@@ -295,7 +306,7 @@ export function registerIpcHandlers(
         agentDecision as 'allow' | 'deny' | 'ask' | 'block',
         options
       )
-      console.log(
+      devLog.log(
         `[IPC] Permission ${decision} for session ${sessionId.slice(0, 8)}`
       )
       return true
@@ -377,7 +388,7 @@ export function registerIpcHandlers(
     ): Promise<boolean> => {
       const success = await sessionStore.terminate(sessionId, signal)
       if (success) {
-        console.log(
+        devLog.log(
           `[IPC] Session ${sessionId.slice(0, 8)} terminated with ${signal}`
         )
         // Add activity log entry
@@ -395,7 +406,7 @@ export function registerIpcHandlers(
   // Remove a session from the store (manual cleanup)
   ipcMain.handle('claudeSessions:remove', (_, sessionId: string): boolean => {
     sessionStore.remove(sessionId)
-    console.log(`[IPC] Session ${sessionId.slice(0, 8)} removed from store`)
+    devLog.log(`[IPC] Session ${sessionId.slice(0, 8)} removed from store`)
     return true
   })
 
@@ -448,7 +459,7 @@ export function registerIpcHandlers(
     async (_, sessionId: string): Promise<boolean> => {
       const session = sessionStore.get(sessionId)
       if (!session?.tmuxTarget) {
-        console.warn(
+        devLog.warn(
           `[IPC] Cannot interrupt: session ${sessionId.slice(0, 8)} not found or not in tmux`
         )
         return false
@@ -456,7 +467,7 @@ export function registerIpcHandlers(
 
       const result = await sendInterrupt(session.tmuxTarget)
       if (result) {
-        console.log(`[IPC] Sent interrupt to session ${sessionId.slice(0, 8)}`)
+        devLog.log(`[IPC] Sent interrupt to session ${sessionId.slice(0, 8)}`)
         // Add activity log entry
         activityLogStore.addEntry(sessionId, {
           id: `interrupt-${Date.now()}`,
@@ -635,7 +646,7 @@ export function registerIpcHandlers(
 
         return { content: fullContent || message.content }
       } catch (error) {
-        console.error('[IPC] Error getting full content:', error)
+        devLog.error('[IPC] Error getting full content:', error)
         return {
           content: null,
           error: error instanceof Error ? error.message : 'Unknown error',
@@ -687,7 +698,7 @@ export function registerIpcHandlers(
         // Check cache first (prevents duplicate parsing from React StrictMode or multiple components)
         const cached = getJsonlFromCache(sessionId)
         if (cached) {
-          console.log(
+          devLog.log(
             `[IPC] JSONL cache hit for session ${sessionId.slice(0, 8)}: ${cached.entries.length} entries, ${cached.toolExecutions.length} tools, ${cached.thinkingBlocks.length} thinking`
           )
           return cached
@@ -696,7 +707,7 @@ export function registerIpcHandlers(
         // First, get session to find cwd
         const session = historyStore.getSession(sessionId)
         if (!session) {
-          console.warn(
+          devLog.warn(
             `[IPC] Session ${sessionId.slice(0, 8)} not found for replay`
           )
           return null
@@ -705,7 +716,7 @@ export function registerIpcHandlers(
         // Find JSONL file
         const jsonlPath = getJsonlPath(session.cwd, sessionId)
         if (!jsonlPath) {
-          console.warn(
+          devLog.warn(
             `[IPC] JSONL file not found for session ${sessionId.slice(0, 8)}`
           )
           return null
@@ -713,7 +724,7 @@ export function registerIpcHandlers(
 
         // Parse JSONL
         const result = await parseJsonlFile(jsonlPath, sessionId)
-        console.log(
+        devLog.log(
           `[IPC] Parsed JSONL for replay: ${result.entries.length} entries, ${result.toolExecutions.length} tools, ${result.thinkingBlocks.length} thinking`
         )
 
@@ -722,7 +733,7 @@ export function registerIpcHandlers(
 
         return result
       } catch (error) {
-        console.error('[IPC] Error parsing JSONL for replay:', error)
+        devLog.error('[IPC] Error parsing JSONL for replay:', error)
         return null
       }
     }
@@ -873,6 +884,55 @@ export function registerIpcHandlers(
   ipcMain.handle('ai:deleteSavedPrompt', (_, id: string): boolean => {
     return deleteSavedPrompt(id)
   })
+
+  // ============================================================================
+  // Slash Command Handlers (Claude Code only)
+  // ============================================================================
+
+  // Save a slash command
+  ipcMain.handle(
+    'commands:save',
+    async (_, command: SlashCommand): Promise<void> => {
+      return saveSlashCommand(command)
+    }
+  )
+
+  // List all slash commands
+  ipcMain.handle('commands:list', async (): Promise<SavedSlashCommand[]> => {
+    return listSlashCommands()
+  })
+
+  // Delete a slash command
+  ipcMain.handle(
+    'commands:delete',
+    async (_, name: string): Promise<boolean> => {
+      return deleteSlashCommand(name)
+    }
+  )
+
+  // Check if command exists
+  ipcMain.handle(
+    'commands:exists',
+    async (_, name: string): Promise<boolean> => {
+      return commandExists(name)
+    }
+  )
+
+  // Get bash template content
+  ipcMain.handle(
+    'commands:getBashTemplate',
+    (_, type: BashTemplateType): string => {
+      return getBashTemplateContent(type)
+    }
+  )
+
+  // Get bash template options for UI
+  ipcMain.handle(
+    'commands:getBashTemplateOptions',
+    (): Array<{ value: BashTemplateType; label: string }> => {
+      return getBashTemplateOptions()
+    }
+  )
 
   // ============================================================================
   // Theme Handlers
@@ -1055,5 +1115,5 @@ export function registerIpcHandlers(
     }
   )
 
-  console.log('[IPC] Handlers registered')
+  devLog.log('[IPC] Handlers registered')
 }

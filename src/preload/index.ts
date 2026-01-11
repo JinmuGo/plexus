@@ -28,6 +28,9 @@ import type {
   PromptImprovement,
   AISettings,
   SavedPrompt,
+  SlashCommand,
+  SavedSlashCommand,
+  BashTemplateType,
   ParsedConversationEntry,
   ParsedToolExecution,
   HourlyUsageData,
@@ -404,6 +407,34 @@ const API = {
     // Delete a saved prompt
     deleteSavedPrompt: (id: string): Promise<boolean> =>
       ipcRenderer.invoke('ai:deleteSavedPrompt', id),
+  },
+
+  // Slash commands (Claude Code only)
+  commands: {
+    // Save a slash command
+    save: (command: SlashCommand): Promise<void> =>
+      ipcRenderer.invoke('commands:save', command),
+
+    // List all slash commands
+    list: (): Promise<SavedSlashCommand[]> =>
+      ipcRenderer.invoke('commands:list'),
+
+    // Delete a slash command
+    delete: (name: string): Promise<boolean> =>
+      ipcRenderer.invoke('commands:delete', name),
+
+    // Check if command exists
+    exists: (name: string): Promise<boolean> =>
+      ipcRenderer.invoke('commands:exists', name),
+
+    // Get bash template content
+    getBashTemplate: (type: BashTemplateType): Promise<string> =>
+      ipcRenderer.invoke('commands:getBashTemplate', type),
+
+    // Get bash template options for UI
+    getBashTemplateOptions: (): Promise<
+      Array<{ value: BashTemplateType; label: string }>
+    > => ipcRenderer.invoke('commands:getBashTemplateOptions'),
   },
 
   // Window management

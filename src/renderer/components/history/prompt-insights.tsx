@@ -19,6 +19,7 @@ import {
   Save,
   ChevronDown,
   ChevronRight,
+  Terminal,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from 'renderer/components/ui/button'
@@ -40,6 +41,7 @@ import {
   TabsTrigger,
 } from 'renderer/components/ui/tabs'
 import { SettingsDialog, useSettingsDialog } from 'renderer/components/settings'
+import { SlashCommandDialog } from './slash-command-dialog'
 import { CURATED_PROMPTS } from 'shared/curated-prompts'
 import type {
   EnhancedPromptGroup,
@@ -48,6 +50,7 @@ import type {
   SavedPrompt,
 } from 'shared/history-types'
 import type { AgentType } from 'shared/hook-types'
+import { devLog } from 'renderer/lib/logger'
 
 const { App } = window
 
@@ -109,6 +112,16 @@ export function PromptInsights() {
   const [isSavingPrompt, setIsSavingPrompt] = useState(false)
   const [promptSaved, setPromptSaved] = useState(false)
 
+  // Slash command dialog
+  const [commandDialogOpen, setCommandDialogOpen] = useState(false)
+  const [commandPrompt, setCommandPrompt] = useState('')
+
+  // Handle save as slash command
+  const handleSaveAsCommand = useCallback((prompt: string) => {
+    setCommandPrompt(prompt)
+    setCommandDialogOpen(true)
+  }, [])
+
   // Filter curated prompts by agent
   const filteredCuratedPrompts = useMemo(() => {
     if (agentFilter === 'all') return curatedPrompts
@@ -135,7 +148,7 @@ export function PromptInsights() {
       const userOnly = result.filter(p => !p.isCurated)
       setUserPrompts(userOnly)
     } catch (err) {
-      console.error('Failed to load user prompts:', err)
+      devLog.error('Failed to load user prompts:', err)
       setError('Failed to load prompts')
     } finally {
       setIsLoadingUser(false)
@@ -175,7 +188,7 @@ export function PromptInsights() {
       const result = await App.ai.getSavedPrompts()
       setSavedPrompts(result)
     } catch (err) {
-      console.error('Failed to load saved prompts:', err)
+      devLog.error('Failed to load saved prompts:', err)
     }
   }, [])
 
@@ -220,7 +233,7 @@ export function PromptInsights() {
       const result = await App.ai.improvePrompt(prompt, provider)
       setImprovement(result)
     } catch (err) {
-      console.error('Failed to improve prompt:', err)
+      devLog.error('Failed to improve prompt:', err)
       setImprovementError(
         err instanceof Error ? err.message : 'Failed to improve prompt'
       )
@@ -237,7 +250,7 @@ export function PromptInsights() {
       await navigator.clipboard.writeText(improvement.improved)
       toast.success('Copied to clipboard')
     } catch (err) {
-      console.error('Failed to copy:', err)
+      devLog.error('Failed to copy:', err)
       toast.error('Failed to copy')
     }
   }
@@ -253,7 +266,7 @@ export function PromptInsights() {
       loadSavedPrompts()
       toast.success('Prompt saved')
     } catch (err) {
-      console.error('Failed to save prompt:', err)
+      devLog.error('Failed to save prompt:', err)
       toast.error('Failed to save prompt')
     } finally {
       setIsSavingPrompt(false)
@@ -267,7 +280,7 @@ export function PromptInsights() {
       setSavedPrompts(prev => prev.filter(p => p.id !== id))
       toast.success('Prompt deleted')
     } catch (err) {
-      console.error('Failed to delete prompt:', err)
+      devLog.error('Failed to delete prompt:', err)
       toast.error('Failed to delete prompt')
     }
   }
@@ -434,50 +447,83 @@ export function PromptInsights() {
                                     {group.representative}
                                   </p>
 
-                                  {/* Meta */}
-                                  <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground flex-wrap">
-                                    {group.isCurated ? (
-                                      <>
-                                        <Badge className="bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30">
-                                          <Sparkles className="w-3 h-3 mr-1" />
-                                          Recommended
-                                        </Badge>
-                                        {group.category && (
-                                          <Badge
-                                            className="capitalize"
-                                            variant="outline"
-                                          >
-                                            {group.category}
+                                  {/* Meta + Actions */}
+                                  <div className="flex items-center justify-between gap-2 mt-2">
+                                    <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap min-w-0">
+                                      {group.isCurated ? (
+                                        <>
+                                          <Badge className="bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30">
+                                            <Sparkles className="w-3 h-3 mr-1" />
+                                            Recommended
                                           </Badge>
-                                        )}
-                                      </>
-                                    ) : (
-                                      <>
-                                        <span className="flex items-center gap-1">
-                                          <MessageSquare className="w-3 h-3" />
-                                          {group.totalCount} uses
-                                        </span>
-                                        {hasVariants && (
-                                          <span className="flex items-center gap-1 text-primary">
+                                          {group.category && (
+                                            <Badge
+                                              className="capitalize"
+                                              variant="outline"
+                                            >
+                                              {group.category}
+                                            </Badge>
+                                          )}
+                                        </>
+                                      ) : (
+                                        <>
+                                          <span className="flex items-center gap-1">
                                             <MessageSquare className="w-3 h-3" />
-                                            {group.variants.length} variants
+                                            {group.totalCount} uses
                                           </span>
-                                        )}
-                                        <span className="flex items-center gap-1">
-                                          <Clock className="w-3 h-3" />
-                                          {formatRelativeTime(group.lastUsed)}
-                                        </span>
-                                      </>
-                                    )}
-                                    {group.agents.map(agent => (
-                                      <Badge
-                                        className="capitalize"
-                                        key={agent}
-                                        variant="secondary"
+                                          {hasVariants && (
+                                            <span className="flex items-center gap-1 text-primary">
+                                              <MessageSquare className="w-3 h-3" />
+                                              {group.variants.length} variants
+                                            </span>
+                                          )}
+                                          <span className="flex items-center gap-1">
+                                            <Clock className="w-3 h-3" />
+                                            {formatRelativeTime(group.lastUsed)}
+                                          </span>
+                                        </>
+                                      )}
+                                      {group.agents.map(agent => (
+                                        <Badge
+                                          className="capitalize"
+                                          key={agent}
+                                          variant="secondary"
+                                        >
+                                          {agent}
+                                        </Badge>
+                                      ))}
+                                    </div>
+
+                                    {/* Action Buttons */}
+                                    <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <Button
+                                        disabled={configuredProviders === 0}
+                                        onClick={() =>
+                                          handleImprove(group.representative)
+                                        }
+                                        size="sm"
+                                        title="Improve prompt with AI"
+                                        variant="outline"
                                       >
-                                        {agent}
-                                      </Badge>
-                                    ))}
+                                        <Sparkles className="w-4 h-4" />
+                                      </Button>
+
+                                      {(group.isCurated ||
+                                        group.agents.includes('claude')) && (
+                                        <Button
+                                          onClick={() =>
+                                            handleSaveAsCommand(
+                                              group.representative
+                                            )
+                                          }
+                                          size="sm"
+                                          title="Save as Claude Code slash command"
+                                          variant="ghost"
+                                        >
+                                          <Terminal className="w-4 h-4" />
+                                        </Button>
+                                      )}
+                                    </div>
                                   </div>
 
                                   {/* Expanded Variants */}
@@ -510,20 +556,6 @@ export function PromptInsights() {
                                     </div>
                                   )}
                                 </div>
-
-                                {/* Improve Button */}
-                                <Button
-                                  className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                                  disabled={configuredProviders === 0}
-                                  onClick={() =>
-                                    handleImprove(group.representative)
-                                  }
-                                  size="sm"
-                                  variant="outline"
-                                >
-                                  <Sparkles className="w-4 h-4 mr-1" />
-                                  Improve
-                                </Button>
                               </div>
                             </CardContent>
                           </Card>
@@ -599,31 +631,63 @@ export function PromptInsights() {
                                   {group.representative}
                                 </p>
 
-                                {/* Meta */}
-                                <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground flex-wrap">
-                                  <span className="flex items-center gap-1">
-                                    <MessageSquare className="w-3 h-3" />
-                                    {group.totalCount} uses
-                                  </span>
-                                  {hasVariants && (
-                                    <span className="flex items-center gap-1 text-primary">
+                                {/* Meta + Actions */}
+                                <div className="flex items-center justify-between gap-2 mt-2">
+                                  <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap min-w-0">
+                                    <span className="flex items-center gap-1">
                                       <MessageSquare className="w-3 h-3" />
-                                      {group.variants.length} variants
+                                      {group.totalCount} uses
                                     </span>
-                                  )}
-                                  <span className="flex items-center gap-1">
-                                    <Clock className="w-3 h-3" />
-                                    {formatRelativeTime(group.lastUsed)}
-                                  </span>
-                                  {group.agents.map(agent => (
-                                    <Badge
-                                      className="capitalize"
-                                      key={agent}
-                                      variant="secondary"
+                                    {hasVariants && (
+                                      <span className="flex items-center gap-1 text-primary">
+                                        <MessageSquare className="w-3 h-3" />
+                                        {group.variants.length} variants
+                                      </span>
+                                    )}
+                                    <span className="flex items-center gap-1">
+                                      <Clock className="w-3 h-3" />
+                                      {formatRelativeTime(group.lastUsed)}
+                                    </span>
+                                    {group.agents.map(agent => (
+                                      <Badge
+                                        className="capitalize"
+                                        key={agent}
+                                        variant="secondary"
+                                      >
+                                        {agent}
+                                      </Badge>
+                                    ))}
+                                  </div>
+
+                                  {/* Action Buttons */}
+                                  <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <Button
+                                      disabled={configuredProviders === 0}
+                                      onClick={() =>
+                                        handleImprove(group.representative)
+                                      }
+                                      size="sm"
+                                      title="Improve prompt with AI"
+                                      variant="outline"
                                     >
-                                      {agent}
-                                    </Badge>
-                                  ))}
+                                      <Sparkles className="w-4 h-4" />
+                                    </Button>
+
+                                    {group.agents.includes('claude') && (
+                                      <Button
+                                        onClick={() =>
+                                          handleSaveAsCommand(
+                                            group.representative
+                                          )
+                                        }
+                                        size="sm"
+                                        title="Save as Claude Code slash command"
+                                        variant="ghost"
+                                      >
+                                        <Terminal className="w-4 h-4" />
+                                      </Button>
+                                    )}
+                                  </div>
                                 </div>
 
                                 {/* Expanded Variants */}
@@ -645,20 +709,6 @@ export function PromptInsights() {
                                   </div>
                                 )}
                               </div>
-
-                              {/* Improve Button */}
-                              <Button
-                                className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                                disabled={configuredProviders === 0}
-                                onClick={() =>
-                                  handleImprove(group.representative)
-                                }
-                                size="sm"
-                                variant="outline"
-                              >
-                                <Sparkles className="w-4 h-4 mr-1" />
-                                Improve
-                              </Button>
                             </div>
                           </CardContent>
                         </Card>
@@ -889,6 +939,13 @@ export function PromptInsights() {
         onOpenChange={settingsDialog.setOpen}
         open={settingsDialog.open}
         trigger={<span className="hidden" />}
+      />
+
+      {/* Slash Command Dialog */}
+      <SlashCommandDialog
+        initialPrompt={commandPrompt}
+        onOpenChange={setCommandDialogOpen}
+        open={commandDialogOpen}
       />
     </div>
   )
