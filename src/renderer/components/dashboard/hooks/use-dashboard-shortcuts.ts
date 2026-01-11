@@ -14,6 +14,8 @@ import {
 } from 'renderer/lib/keyboard'
 import { useSidebar } from '../../ui/sidebar'
 import { useSessions, useUIStore } from 'renderer/stores'
+import { useTheme } from 'renderer/lib/theme-context'
+import type { Theme } from 'shared/theme-types'
 import { useProjects, filterSessionsByProject } from 'renderer/lib/hooks'
 import { sortSessions } from '../claude-sessions-view'
 
@@ -54,6 +56,26 @@ export function useDashboardShortcuts() {
 
   const { toggle: toggleSidebar } = useSidebar()
   const { toggleCheatsheet } = useShortcutContext()
+  const { theme, setTheme } = useTheme()
+
+  // Cycle through themes: light → dark → system → light
+  const cycleTheme = useCallback(() => {
+    const themeOrder: Theme[] = ['light', 'dark', 'system']
+    const currentIndex = themeOrder.indexOf(theme)
+    const nextIndex = (currentIndex + 1) % themeOrder.length
+    setTheme(themeOrder[nextIndex])
+  }, [theme, setTheme])
+
+  // Get recent sessions for quick-jump (1-5 keys)
+  // Sorted by lastActivity descending (most recent first)
+  const recentSessions = useMemo(
+    () =>
+      [...sessions]
+        .filter(s => s.phase !== 'ended')
+        .sort((a, b) => b.lastActivity - a.lastActivity)
+        .slice(0, 5),
+    [sessions]
+  )
 
   // Session list navigation handlers (j/k)
   const handleSessionNext = useCallback(() => {
@@ -140,6 +162,17 @@ export function useDashboardShortcuts() {
     }
   }, [filteredSessions, selectedSessionIndex])
 
+  // Jump to recent agent by index (for 1-5 quick jump)
+  const handleJumpToRecent = useCallback(
+    async (index: number) => {
+      const session = recentSessions[index]
+      if (session) {
+        await window.App.tmux.focus(session.id)
+      }
+    },
+    [recentSessions]
+  )
+
   // Register global shortcuts (always active)
   useGlobalShortcuts(
     useMemo(
@@ -169,27 +202,38 @@ export function useDashboardShortcuts() {
         },
         {
           id: 'global.sessions',
-          key: '1',
+          key: 'vs',
           action: () => setViewMode('sessions'),
           description: 'Sessions view',
           category: 'navigation' as const,
+          displayKey: 'vs',
         },
         {
           id: 'global.history',
-          key: '2',
+          key: 'vh',
           action: () => setViewMode('history'),
           description: 'History view',
           category: 'navigation' as const,
+          displayKey: 'vh',
         },
         {
           id: 'global.analytics',
-          key: '3',
+          key: 'va',
           action: () => setViewMode('analytics'),
           description: 'Analytics view',
           category: 'navigation' as const,
+          displayKey: 'va',
+        },
+        {
+          id: 'global.themeToggle',
+          key: 'tt',
+          action: cycleTheme,
+          description: 'Toggle theme',
+          category: 'system' as const,
+          displayKey: 'tt',
         },
       ],
-      [toggleCheatsheet, toggleSidebar, setViewMode]
+      [toggleCheatsheet, toggleSidebar, setViewMode, cycleTheme]
     )
   )
 
@@ -303,6 +347,42 @@ export function useDashboardShortcuts() {
           description: 'Jump to agent',
           category: 'actions' as const,
         },
+        // Quick jump to recent agents (1-5)
+        {
+          id: 'sessions.jumpToRecent1',
+          key: '1',
+          action: () => handleJumpToRecent(0),
+          description: 'Jump to most recent agent',
+          category: 'actions' as const,
+        },
+        {
+          id: 'sessions.jumpToRecent2',
+          key: '2',
+          action: () => handleJumpToRecent(1),
+          description: 'Jump to 2nd recent agent',
+          category: 'actions' as const,
+        },
+        {
+          id: 'sessions.jumpToRecent3',
+          key: '3',
+          action: () => handleJumpToRecent(2),
+          description: 'Jump to 3rd recent agent',
+          category: 'actions' as const,
+        },
+        {
+          id: 'sessions.jumpToRecent4',
+          key: '4',
+          action: () => handleJumpToRecent(3),
+          description: 'Jump to 4th recent agent',
+          category: 'actions' as const,
+        },
+        {
+          id: 'sessions.jumpToRecent5',
+          key: '5',
+          action: () => handleJumpToRecent(4),
+          description: 'Jump to 5th recent agent',
+          category: 'actions' as const,
+        },
       ],
       [
         handleSessionNext,
@@ -313,6 +393,7 @@ export function useDashboardShortcuts() {
         handleProjectPrev,
         selectAllProjects,
         handleJumpToAgent,
+        handleJumpToRecent,
         filteredSessions,
         selectedSessionIndex,
         setSelectedSessionIndex,

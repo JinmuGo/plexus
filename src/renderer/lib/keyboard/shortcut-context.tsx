@@ -117,24 +117,57 @@ export function ShortcutProvider({
       const scopeShortcuts = registry.getByScope(activeScope)
       const sortedShortcuts = sortByPriority(scopeShortcuts)
 
-      // Find matching shortcut
-      for (const shortcut of sortedShortcuts) {
-        // Check if enabled (scope + condition)
-        if (!registry.isEnabled(shortcut.id)) continue
+      // Helper to check if a shortcut key is a sequence (multi-character, not special keys)
+      const isSequenceShortcut = (key: string) =>
+        key.length > 1 &&
+        !key.startsWith('Arrow') &&
+        key !== 'Enter' &&
+        key !== 'Escape' &&
+        key !== 'Tab'
 
-        if (matchesShortcut(event, shortcut, state.buffer)) {
-          if (shortcut.preventDefault !== false) {
-            event.preventDefault()
-          }
-          shortcut.action()
+      // Separate sequence shortcuts from single-key shortcuts
+      const sequenceShortcuts = sortedShortcuts.filter(s =>
+        isSequenceShortcut(s.key)
+      )
+      const singleKeyShortcuts = sortedShortcuts.filter(
+        s => !isSequenceShortcut(s.key)
+      )
 
-          // Clear buffer after successful match
-          state.buffer = []
-          if (state.timeoutId) {
-            clearTimeout(state.timeoutId)
-            state.timeoutId = null
-          }
+      // Helper to execute matching shortcut
+      const tryMatch = (shortcut: (typeof sortedShortcuts)[0]): boolean => {
+        if (!registry.isEnabled(shortcut.id)) return false
+        if (!matchesShortcut(event, shortcut, state.buffer)) return false
+
+        if (shortcut.preventDefault !== false) {
+          event.preventDefault()
+        }
+        shortcut.action()
+
+        // Clear buffer after successful match
+        state.buffer = []
+        if (state.timeoutId) {
+          clearTimeout(state.timeoutId)
+          state.timeoutId = null
+        }
+        return true
+      }
+
+      // First, try sequence shortcuts (higher priority)
+      // This ensures 'vh' is matched before 'h'
+      let matched = false
+      for (const shortcut of sequenceShortcuts) {
+        if (tryMatch(shortcut)) {
+          matched = true
           break
+        }
+      }
+
+      // If no sequence matched, try single-key shortcuts
+      if (!matched) {
+        for (const shortcut of singleKeyShortcuts) {
+          if (tryMatch(shortcut)) {
+            break
+          }
         }
       }
     }
