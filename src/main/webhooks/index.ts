@@ -4,6 +4,7 @@
  * Simple webhook-based notifications for Slack and Discord.
  */
 
+import { devLog } from '../lib/utils'
 import type { ClaudeSession, PermissionContext } from 'shared/hook-types'
 import type { IntegrationSettings } from 'shared/integration-types'
 import { slackWebhook } from './slack-webhook'
@@ -28,7 +29,7 @@ export async function notifyPermissionRequest(
       slackWebhook
         .sendPermissionRequest(settings.slack.webhookUrl, session, context)
         .catch(err => {
-          console.error('[Webhook] Slack notification failed:', err.message)
+          devLog.error('[Webhook] Slack notification failed:', err.message)
         })
     )
   }
@@ -39,7 +40,7 @@ export async function notifyPermissionRequest(
       discordWebhook
         .sendPermissionRequest(settings.discord.webhookUrl, session, context)
         .catch(err => {
-          console.error('[Webhook] Discord notification failed:', err.message)
+          devLog.error('[Webhook] Discord notification failed:', err.message)
         })
     )
   }
@@ -62,7 +63,7 @@ export async function notifySessionEnded(
       slackWebhook
         .sendSessionEnded(settings.slack.webhookUrl, session)
         .catch(err => {
-          console.error('[Webhook] Slack notification failed:', err.message)
+          devLog.error('[Webhook] Slack notification failed:', err.message)
         })
     )
   }
@@ -73,7 +74,7 @@ export async function notifySessionEnded(
       discordWebhook
         .sendSessionEnded(settings.discord.webhookUrl, session)
         .catch(err => {
-          console.error('[Webhook] Discord notification failed:', err.message)
+          devLog.error('[Webhook] Discord notification failed:', err.message)
         })
     )
   }

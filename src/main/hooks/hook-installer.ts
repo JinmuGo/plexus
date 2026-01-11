@@ -23,6 +23,7 @@ import {
   getHooksDir,
   getSettingsFile,
 } from '../constants/hooks/claude'
+import { devLog } from '../lib/utils'
 
 // Compute paths at module level for convenience
 const CLAUDE_DIR = getClaudeDir()
@@ -46,6 +47,7 @@ const HOOK_EVENTS = [
   { name: 'UserPromptSubmit', config: 'withoutMatcher' },
   { name: 'PreToolUse', config: 'withMatcher' },
   { name: 'PostToolUse', config: 'withMatcher' },
+  { name: 'PostToolUseFailure', config: 'withMatcher' }, // Tool execution failure tracking
   { name: 'PermissionRequest', config: 'withMatcherAndTimeout' },
   { name: 'Notification', config: 'withMatcher' },
   { name: 'Stop', config: 'withoutMatcher' },
@@ -141,7 +143,7 @@ function readSettings(): ClaudeSettings {
  */
 function writeSettings(settings: ClaudeSettings): void {
   if (!writeJsonSettings(SETTINGS_FILE, settings)) {
-    console.error('[HookInstaller] Failed to write settings')
+    devLog.error('[HookInstaller] Failed to write settings')
   }
 }
 
@@ -158,7 +160,7 @@ function hasOurHook(configs: HookConfig[]): boolean {
  * Install the hook script and update settings
  */
 export async function installIfNeeded(): Promise<void> {
-  console.log('[HookInstaller] Checking hook installation...')
+  devLog.log('[HookInstaller] Checking hook installation...')
 
   // Ensure directories exist
   ensureDirectory(CLAUDE_DIR)
@@ -170,8 +172,8 @@ export async function installIfNeeded(): Promise<void> {
 
   // Check if source exists
   if (!fileExists(sourcePath)) {
-    console.warn(`[HookInstaller] Source script not found: ${sourcePath}`)
-    console.warn(
+    devLog.warn(`[HookInstaller] Source script not found: ${sourcePath}`)
+    devLog.warn(
       '[HookInstaller] Hook script will need to be installed manually'
     )
     return
@@ -179,10 +181,10 @@ export async function installIfNeeded(): Promise<void> {
 
   // Copy script with executable permissions
   if (!copyScriptWithPermissions(sourcePath, destPath)) {
-    console.error('[HookInstaller] Failed to install script')
+    devLog.error('[HookInstaller] Failed to install script')
     return
   }
-  console.log(`[HookInstaller] Script installed: ${destPath}`)
+  devLog.log(`[HookInstaller] Script installed: ${destPath}`)
 
   // Update settings.json
   const settings = readSettings()
@@ -198,18 +200,18 @@ export async function installIfNeeded(): Promise<void> {
         // Add our hook to existing configs
         const newConfigs = generateHookConfig(config, command)
         hooks[name] = [...existingConfigs, ...newConfigs]
-        console.log(`[HookInstaller] Added hook for ${name}`)
+        devLog.log(`[HookInstaller] Added hook for ${name}`)
       }
     } else {
       // Create new hook entry
       hooks[name] = generateHookConfig(config, command)
-      console.log(`[HookInstaller] Created hook for ${name}`)
+      devLog.log(`[HookInstaller] Created hook for ${name}`)
     }
   }
 
   settings.hooks = hooks
   writeSettings(settings)
-  console.log('[HookInstaller] Installation complete')
+  devLog.log('[HookInstaller] Installation complete')
 }
 
 /**
@@ -243,12 +245,12 @@ export function isInstalled(): boolean {
  * Uninstall hooks from settings.json and remove script
  */
 export async function uninstall(): Promise<void> {
-  console.log('[HookInstaller] Uninstalling hooks...')
+  devLog.log('[HookInstaller] Uninstalling hooks...')
 
   // Remove script
   const scriptPath = getDestScriptPath()
   if (removeFile(scriptPath)) {
-    console.log(`[HookInstaller] Script removed: ${scriptPath}`)
+    devLog.log(`[HookInstaller] Script removed: ${scriptPath}`)
   }
 
   // Update settings.json
@@ -256,7 +258,7 @@ export async function uninstall(): Promise<void> {
   const hooks = settings.hooks
 
   if (!hooks) {
-    console.log('[HookInstaller] No hooks to remove')
+    devLog.log('[HookInstaller] No hooks to remove')
     return
   }
 
@@ -286,7 +288,7 @@ export async function uninstall(): Promise<void> {
   }
 
   writeSettings(settings)
-  console.log('[HookInstaller] Uninstallation complete')
+  devLog.log('[HookInstaller] Uninstallation complete')
 }
 
 // Export for testing (backward compatibility)

@@ -1,5 +1,6 @@
 import * as net from 'node:net'
 import * as fs from 'node:fs'
+import { devLog } from '../lib/utils'
 
 import {
   getSocketPath,
@@ -29,7 +30,7 @@ export function createSocketServer(): SocketServerManager {
   const sessionSocketMap = new Map<string, net.Socket>()
 
   const handleConnection = (socket: net.Socket) => {
-    console.log('[SocketServer] Client connected')
+    devLog.log('[SocketServer] Client connected')
     let buffer = ''
     let registeredSessionId: string | null = null
 
@@ -50,14 +51,14 @@ export function createSocketServer(): SocketServerManager {
             if (message.type === 'session:register') {
               registeredSessionId = message.sessionId
               sessionSocketMap.set(message.sessionId, socket)
-              console.log(
+              devLog.log(
                 `[SocketServer] Session ${message.sessionId} registered with socket`
               )
             }
 
             processMessage(message, socket)
           } catch (error) {
-            console.error('[SocketServer] Failed to parse message:', error)
+            devLog.error('[SocketServer] Failed to parse message:', error)
           }
         }
         newlineIndex = buffer.indexOf('\n')
@@ -65,25 +66,25 @@ export function createSocketServer(): SocketServerManager {
     })
 
     socket.on('close', () => {
-      console.log('[SocketServer] Client disconnected')
+      devLog.log('[SocketServer] Client disconnected')
       // Clean up session socket mapping
       if (registeredSessionId) {
         sessionSocketMap.delete(registeredSessionId)
-        console.log(
+        devLog.log(
           `[SocketServer] Session ${registeredSessionId} socket removed`
         )
       }
     })
 
     socket.on('error', error => {
-      console.error('[SocketServer] Socket error:', error)
+      devLog.error('[SocketServer] Socket error:', error)
     })
   }
 
   const processMessage = (message: IpcMessage, socket: net.Socket) => {
     // Legacy IPC processing - hook-based detection is now primary
     // This socket server is kept for backward compatibility with CLI wrapper
-    console.log(
+    devLog.log(
       `[SocketServer] Legacy IPC message: ${message.type} from ${message.sessionId}`
     )
 
@@ -114,7 +115,7 @@ export function createSocketServer(): SocketServerManager {
 
   const start = () => {
     if (server) {
-      console.log('[SocketServer] Server already running')
+      devLog.log('[SocketServer] Server already running')
       return
     }
 
@@ -123,11 +124,11 @@ export function createSocketServer(): SocketServerManager {
     server = net.createServer(handleConnection)
 
     server.on('error', error => {
-      console.error('[SocketServer] Server error:', error)
+      devLog.error('[SocketServer] Server error:', error)
     })
 
     server.listen(socketPath, () => {
-      console.log(`[SocketServer] Listening on ${socketPath}`)
+      devLog.log(`[SocketServer] Listening on ${socketPath}`)
       // Set socket permissions (readable/writable by owner)
       try {
         fs.chmodSync(socketPath, 0o600)
@@ -140,7 +141,7 @@ export function createSocketServer(): SocketServerManager {
   const stop = () => {
     if (server) {
       server.close(() => {
-        console.log('[SocketServer] Server stopped')
+        devLog.log('[SocketServer] Server stopped')
       })
       cleanupSocket()
       server = null

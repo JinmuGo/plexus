@@ -15,8 +15,9 @@ log.transports.file.resolvePathFn = () => {
 
 // Configure log levels
 log.transports.file.level = 'info'
+// Console output only in development mode
 log.transports.console.level =
-  process.env.NODE_ENV === 'development' ? 'debug' : 'info'
+  process.env.NODE_ENV === 'development' ? 'debug' : false
 
 // Configure log format
 log.transports.file.format =
@@ -65,6 +66,19 @@ export const logger = {
 
 // Export the base log instance for advanced usage
 export { log }
+
+/**
+ * General-purpose logger for quick logging without scope.
+ * Uses electron-log so console output is dev-only (configured above).
+ * For structured logging, prefer using scoped loggers (e.g., logger.session).
+ */
+export const devLog = {
+  log: (...args: unknown[]) => log.info(...args),
+  info: (...args: unknown[]) => log.info(...args),
+  warn: (...args: unknown[]) => log.warn(...args),
+  error: (...args: unknown[]) => log.error(...args),
+  debug: (...args: unknown[]) => log.debug(...args),
+}
 
 // Helper to log with session ID prefix
 export function logWithSession(

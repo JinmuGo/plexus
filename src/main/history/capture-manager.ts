@@ -6,6 +6,7 @@
  * Parses JSONL files to capture full conversation content.
  */
 
+import { devLog } from '../lib/utils'
 import { historyStore } from '../store/history'
 import { costStore } from '../store/cost-store'
 import { sessionStore, type SessionEvent } from '../store/sessions'
@@ -126,11 +127,11 @@ class HistoryCaptureManager {
    */
   start(): void {
     if (this.isRunning) {
-      console.log('[HistoryCaptureManager] Already running')
+      devLog.log('[HistoryCaptureManager] Already running')
       return
     }
 
-    console.log('[HistoryCaptureManager] Starting capture')
+    devLog.log('[HistoryCaptureManager] Starting capture')
 
     this.unsubscribe = sessionStore.subscribe((event: SessionEvent) => {
       this.handleSessionEvent(event)
@@ -148,7 +149,7 @@ class HistoryCaptureManager {
       this.unsubscribe = null
     }
     this.isRunning = false
-    console.log('[HistoryCaptureManager] Stopped capture')
+    devLog.log('[HistoryCaptureManager] Stopped capture')
   }
 
   /**
@@ -177,7 +178,7 @@ class HistoryCaptureManager {
           break
       }
     } catch (error) {
-      console.error('[HistoryCaptureManager] Error handling event:', error)
+      devLog.error('[HistoryCaptureManager] Error handling event:', error)
     }
   }
 
@@ -230,7 +231,7 @@ class HistoryCaptureManager {
       jsonlLength: null,
     })
 
-    console.log(
+    devLog.log(
       `[HistoryCaptureManager] Session persisted: ${session.id.slice(0, 8)}`
     )
   }
@@ -298,7 +299,7 @@ class HistoryCaptureManager {
       jsonlLength: null,
     })
 
-    console.log(
+    devLog.log(
       `[HistoryCaptureManager] Session ended: ${session.id.slice(0, 8)}`
     )
 
@@ -312,7 +313,7 @@ class HistoryCaptureManager {
   private async parseSessionJsonl(session: ClaudeSession): Promise<void> {
     // Skip if already parsed (prevents duplicate messages when both 'phaseChange' and 'remove' events fire)
     if (parsedJsonlSessions.has(session.id)) {
-      console.log(
+      devLog.log(
         `[HistoryCaptureManager] JSONL already parsed for session ${session.id.slice(0, 8)}, skipping`
       )
       return
@@ -321,13 +322,13 @@ class HistoryCaptureManager {
     try {
       const jsonlPath = getJsonlPath(session.cwd, session.id)
       if (!jsonlPath) {
-        console.log(
+        devLog.log(
           `[HistoryCaptureManager] No JSONL file found for session ${session.id.slice(0, 8)}`
         )
         return
       }
 
-      console.log(
+      devLog.log(
         `[HistoryCaptureManager] Parsing JSONL for session ${session.id.slice(0, 8)}`
       )
 
@@ -337,7 +338,7 @@ class HistoryCaptureManager {
       )
 
       if (entries.length === 0) {
-        console.log(
+        devLog.log(
           `[HistoryCaptureManager] No entries found in JSONL for session ${session.id.slice(0, 8)}`
         )
         return
@@ -389,14 +390,14 @@ class HistoryCaptureManager {
       // Mark session as parsed to prevent re-parsing
       parsedJsonlSessions.add(session.id)
 
-      console.log(
+      devLog.log(
         `[HistoryCaptureManager] JSONL parsed: ${messages.length} messages, ${toolExecutions.length} tools for session ${session.id.slice(0, 8)}`
       )
 
       // Capture cost data from the same JSONL
       await this.captureSessionCost(session, jsonlPath)
     } catch (error) {
-      console.error(
+      devLog.error(
         `[HistoryCaptureManager] Error parsing JSONL for session ${session.id.slice(0, 8)}:`,
         error
       )
@@ -413,7 +414,7 @@ class HistoryCaptureManager {
     try {
       // Check if we already have cost data for this session
       if (costStore.hasUsage(session.id)) {
-        console.log(
+        devLog.log(
           `[HistoryCaptureManager] Cost already captured for session ${session.id.slice(0, 8)}`
         )
         return
@@ -423,7 +424,7 @@ class HistoryCaptureManager {
       const usages = await parseClaudeSession(jsonlPath)
 
       if (usages.length === 0) {
-        console.log(
+        devLog.log(
           `[HistoryCaptureManager] No usage data found for session ${session.id.slice(0, 8)}`
         )
         return
@@ -447,13 +448,13 @@ class HistoryCaptureManager {
       // Store the usage record
       costStore.recordUsage(session.id, session.agent, totalUsage, totalCost)
 
-      console.log(
+      devLog.log(
         `[HistoryCaptureManager] Cost captured for session ${session.id.slice(0, 8)}: ` +
           `${aggregated.totalInputTokens} in / ${aggregated.totalOutputTokens} out tokens, ` +
           `$${totalCost.toFixed(4)} (${aggregated.primaryModel})`
       )
     } catch (error) {
-      console.error(
+      devLog.error(
         `[HistoryCaptureManager] Error capturing cost for session ${session.id.slice(0, 8)}:`,
         error
       )
@@ -487,7 +488,7 @@ class HistoryCaptureManager {
       const { sessionId, event: eventName, tool, toolInput, toolUseId } = event
 
       // Debug logging
-      console.log(
+      devLog.log(
         `[HistoryCaptureManager] processHookEvent: ${eventName} session:${sessionId.slice(0, 8)} tool:${tool || 'none'} toolUseId:${toolUseId || 'none'}`
       )
 
@@ -529,7 +530,7 @@ class HistoryCaptureManager {
 
       // Handle tool execution tracking
       if (eventName === 'PreToolUse' && tool) {
-        console.log(
+        devLog.log(
           `[HistoryCaptureManager] PreToolUse detected: tool=${tool} toolUseId=${toolUseId || 'MISSING'}`
         )
 
@@ -549,13 +550,13 @@ class HistoryCaptureManager {
         if (toolUseId) {
           pendingTools.set(toolUseId, execution.id)
         }
-        console.log(
+        devLog.log(
           `[HistoryCaptureManager] Tool execution saved: ${execution.id}`
         )
       }
 
       if (eventName === 'PostToolUse' && toolUseId) {
-        console.log(
+        devLog.log(
           `[HistoryCaptureManager] PostToolUse detected: toolUseId=${toolUseId}`
         )
         historyStore.completeToolExecution(toolUseId, 'success')
@@ -570,7 +571,7 @@ class HistoryCaptureManager {
         }
       }
     } catch (error) {
-      console.error(
+      devLog.error(
         '[HistoryCaptureManager] Error processing hook event:',
         error
       )

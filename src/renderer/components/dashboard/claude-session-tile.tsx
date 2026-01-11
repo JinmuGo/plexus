@@ -45,6 +45,7 @@ import { springs } from 'renderer/lib/motion'
 import { cn } from 'renderer/lib/utils'
 import type { ClaudeSession } from 'shared/hook-types'
 import type { SessionCost } from 'shared/cost-types'
+import { devLog } from 'renderer/lib/logger'
 
 const { App } = window
 
@@ -260,7 +261,7 @@ export const ClaudeSessionTile = memo(function ClaudeSessionTile({
       try {
         await App.permissions.respond(session.id, decision)
       } catch (error) {
-        console.error('[ClaudeSessionTile] Permission action failed:', error)
+        devLog.error('[ClaudeSessionTile] Permission action failed:', error)
       } finally {
         setIsPermissionLoading(null)
       }

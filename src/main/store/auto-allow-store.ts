@@ -8,6 +8,7 @@
  * (Claude, Cursor, Gemini) to reduce permission fatigue.
  */
 
+import { devLog } from '../lib/utils'
 import type { AutoAllowEntry } from 'shared/hook-types'
 
 interface AutoAllowState {
@@ -48,7 +49,7 @@ function addAutoAllow(
       toolName,
       allowedAt: Date.now(),
     })
-    console.log(
+    devLog.log(
       `[AutoAllowStore] Auto-allowed '${toolName}' for session ${sessionId.slice(0, 8)}`
     )
   }
@@ -67,7 +68,7 @@ function removeAutoAllow(
 
   const deleted = sessionTools.delete(toolName)
   if (deleted) {
-    console.log(
+    devLog.log(
       `[AutoAllowStore] Removed auto-allow for '${toolName}' in session ${sessionId.slice(0, 8)}`
     )
   }
@@ -92,7 +93,7 @@ function getAutoAllowedTools(
 function clearSession(state: AutoAllowState, sessionId: string): void {
   const deleted = state.sessions.delete(sessionId)
   if (deleted) {
-    console.log(
+    devLog.log(
       `[AutoAllowStore] Cleared auto-allows for session ${sessionId.slice(0, 8)}`
     )
   }
@@ -103,7 +104,7 @@ function clearSession(state: AutoAllowState, sessionId: string): void {
  */
 function clear(state: AutoAllowState): void {
   state.sessions.clear()
-  console.log('[AutoAllowStore] Cleared all auto-allows')
+  devLog.log('[AutoAllowStore] Cleared all auto-allows')
 }
 
 /**

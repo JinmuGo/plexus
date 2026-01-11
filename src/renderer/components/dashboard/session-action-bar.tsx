@@ -25,6 +25,7 @@ import {
   AlertTriangle,
 } from 'lucide-react'
 import type { AgentSession } from 'shared/ipc-protocol'
+import { devLog } from 'renderer/lib/logger'
 
 const { App } = window
 
@@ -50,7 +51,7 @@ export function SessionActionBar({ session }: SessionActionBarProps) {
     try {
       await App.sessions.stdin(session.id, `${response}\n`)
     } catch (error) {
-      console.error('Failed to send response:', error)
+      devLog.error('Failed to send response:', error)
     }
   }
 
@@ -67,7 +68,7 @@ export function SessionActionBar({ session }: SessionActionBarProps) {
       await App.sessions.kill(session.id, signal)
       setIsKillDialogOpen(false)
     } catch (error) {
-      console.error('Failed to kill session:', error)
+      devLog.error('Failed to kill session:', error)
     }
   }
 

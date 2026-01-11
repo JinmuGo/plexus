@@ -5,6 +5,7 @@ import { cn } from 'renderer/lib/utils'
 import { Button } from 'renderer/components/ui/button'
 import { MarkdownContent } from 'renderer/components/ui/markdown-content'
 import type { HistoryMessage } from 'shared/history-types'
+import { devLog } from 'renderer/lib/logger'
 
 const { App } = window
 
@@ -67,7 +68,7 @@ export const MessageBubble = memo(function MessageBubble({
         setIsExpanded(true)
       }
     } catch (error) {
-      console.error('Failed to load full content:', error)
+      devLog.error('Failed to load full content:', error)
     } finally {
       setIsLoadingFull(false)
     }

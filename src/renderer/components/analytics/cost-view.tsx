@@ -12,6 +12,7 @@ import { SpendingChart } from './spending-chart'
 import { CostBreakdown } from './cost-breakdown'
 import { Button } from '../ui/button'
 import type { CostStatistics } from 'shared/cost-types'
+import { devLog } from 'renderer/lib/logger'
 
 const BILLING_LINKS = [
   {
@@ -37,7 +38,7 @@ export function CostView() {
       const statistics = await App.cost.getStatistics()
       setStats(statistics)
     } catch (err) {
-      console.error('[CostView] Failed to load statistics:', err)
+      devLog.error('[CostView] Failed to load statistics:', err)
       setError(err instanceof Error ? err.message : 'Failed to load cost data')
     } finally {
       setIsLoading(false)

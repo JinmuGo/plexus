@@ -11,6 +11,7 @@ import type {
   ShortcutScope,
   ShortcutCategory,
 } from './types'
+import { devLog } from '../logger'
 
 export function createShortcutRegistry(): ShortcutRegistry {
   const shortcuts = new Map<string, ShortcutDefinition>()
@@ -18,7 +19,7 @@ export function createShortcutRegistry(): ShortcutRegistry {
 
   const register = (shortcut: ShortcutDefinition): (() => void) => {
     if (shortcuts.has(shortcut.id)) {
-      console.warn(
+      devLog.warn(
         `[ShortcutRegistry] Shortcut with id "${shortcut.id}" already registered. Overwriting.`
       )
     }

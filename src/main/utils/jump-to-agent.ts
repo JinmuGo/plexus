@@ -5,6 +5,7 @@
  * Supports Claude Code (terminal), Cursor IDE, and Gemini CLI.
  */
 
+import { devLog } from '../lib/utils'
 import type { ClaudeSession } from 'shared/hook-types'
 import { focusPane, focusByTty, focusCursor } from '../tmux/target-finder'
 import { activateTerminalApp, activateWindowByProcess } from './platform-focus'
@@ -40,7 +41,7 @@ export async function jumpToAgent(session: ClaudeSession): Promise<JumpResult> {
         return { success: true, method: 'tmux' }
       }
     } catch (error) {
-      console.warn('[JumpToAgent] Tmux focus failed:', error)
+      devLog.warn('[JumpToAgent] Tmux focus failed:', error)
     }
   }
 
@@ -52,7 +53,7 @@ export async function jumpToAgent(session: ClaudeSession): Promise<JumpResult> {
         return { success: true, method: 'tty' }
       }
     } catch (error) {
-      console.warn('[JumpToAgent] TTY focus failed:', error)
+      devLog.warn('[JumpToAgent] TTY focus failed:', error)
     }
   }
 
@@ -64,7 +65,7 @@ export async function jumpToAgent(session: ClaudeSession): Promise<JumpResult> {
         return { success: true, method: 'cursor' }
       }
     } catch (error) {
-      console.warn('[JumpToAgent] Cursor focus failed:', error)
+      devLog.warn('[JumpToAgent] Cursor focus failed:', error)
     }
   }
 
@@ -76,7 +77,7 @@ export async function jumpToAgent(session: ClaudeSession): Promise<JumpResult> {
         return { success: true, method: 'terminal-fallback' }
       }
     } catch (error) {
-      console.warn('[JumpToAgent] Terminal fallback failed:', error)
+      devLog.warn('[JumpToAgent] Terminal fallback failed:', error)
     }
   }
 
@@ -88,7 +89,7 @@ export async function jumpToAgent(session: ClaudeSession): Promise<JumpResult> {
         return { success: true, method: 'cursor' }
       }
     } catch (error) {
-      console.warn('[JumpToAgent] Cursor process activation failed:', error)
+      devLog.warn('[JumpToAgent] Cursor process activation failed:', error)
     }
   }
 

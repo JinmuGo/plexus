@@ -43,7 +43,7 @@ import type { AgentType } from 'shared/hook-types'
 import { CURATED_PROMPTS } from 'shared/curated-prompts'
 import { groupPrompts, selectSmartGroupingMode } from './prompt-normalizer'
 import { SCHEMA_VERSION } from '../constants/sessions'
-import { generateId } from '../lib/utils'
+import { generateId, devLog } from '../lib/utils'
 
 /**
  * Convert database row to HistorySession
@@ -142,7 +142,7 @@ class HistoryStore {
    */
   initialize(dbPath?: string): void {
     if (this.db) {
-      console.log('[HistoryStore] Already initialized')
+      devLog.log('[HistoryStore] Already initialized')
       return
     }
 
@@ -155,7 +155,7 @@ class HistoryStore {
       mkdirSync(dir, { recursive: true })
     }
 
-    console.log(`[HistoryStore] Initializing database at ${this.dbPath}`)
+    devLog.log(`[HistoryStore] Initializing database at ${this.dbPath}`)
 
     this.db = new Database(this.dbPath)
 
@@ -178,7 +178,7 @@ class HistoryStore {
     if (this.db) {
       this.db.close()
       this.db = null
-      console.log('[HistoryStore] Database closed')
+      devLog.log('[HistoryStore] Database closed')
     }
   }
 
@@ -192,7 +192,7 @@ class HistoryStore {
       simple: true,
     }) as number
 
-    console.log(
+    devLog.log(
       `[HistoryStore] Current schema version: ${currentVersion}, target: ${SCHEMA_VERSION}`
     )
 
@@ -231,7 +231,7 @@ class HistoryStore {
   private migrateToV1(): void {
     if (!this.db) throw new Error('Database not initialized')
 
-    console.log('[HistoryStore] Running migration to v1')
+    devLog.log('[HistoryStore] Running migration to v1')
 
     this.db.exec(`
       -- Sessions table
@@ -308,7 +308,7 @@ class HistoryStore {
     `)
 
     this.db.pragma('user_version = 1')
-    console.log('[HistoryStore] Migration to v1 complete')
+    devLog.log('[HistoryStore] Migration to v1 complete')
   }
 
   /**
@@ -317,7 +317,7 @@ class HistoryStore {
   private migrateToV2(): void {
     if (!this.db) throw new Error('Database not initialized')
 
-    console.log('[HistoryStore] Running migration to v2 (JSONL references)')
+    devLog.log('[HistoryStore] Running migration to v2 (JSONL references)')
 
     // Add new columns to messages table for JSONL references
     this.db.exec(`
@@ -338,7 +338,7 @@ class HistoryStore {
     `)
 
     this.db.pragma('user_version = 2')
-    console.log('[HistoryStore] Migration to v2 complete')
+    devLog.log('[HistoryStore] Migration to v2 complete')
   }
 
   /**
@@ -347,7 +347,7 @@ class HistoryStore {
   private migrateToV3(): void {
     if (!this.db) throw new Error('Database not initialized')
 
-    console.log('[HistoryStore] Running migration to v3 (project root)')
+    devLog.log('[HistoryStore] Running migration to v3 (project root)')
 
     // Add project root columns
     this.db.exec(`
@@ -365,7 +365,7 @@ class HistoryStore {
       .all() as Array<{ id: string; cwd: string }>
 
     if (sessions.length > 0) {
-      console.log(
+      devLog.log(
         `[HistoryStore] Backfilling project root for ${sessions.length} sessions`
       )
 
@@ -387,7 +387,7 @@ class HistoryStore {
     }
 
     this.db.pragma('user_version = 3')
-    console.log('[HistoryStore] Migration to v3 complete')
+    devLog.log('[HistoryStore] Migration to v3 complete')
   }
 
   /**
@@ -396,7 +396,7 @@ class HistoryStore {
   private migrateToV4(): void {
     if (!this.db) throw new Error('Database not initialized')
 
-    console.log('[HistoryStore] Running migration to v4 (token usage)')
+    devLog.log('[HistoryStore] Running migration to v4 (token usage)')
 
     this.db.exec(`
       -- Token usage table for cost tracking
@@ -428,7 +428,7 @@ class HistoryStore {
     `)
 
     this.db.pragma('user_version = 4')
-    console.log('[HistoryStore] Migration to v4 complete')
+    devLog.log('[HistoryStore] Migration to v4 complete')
   }
 
   /**
@@ -437,7 +437,7 @@ class HistoryStore {
   private migrateToV5(): void {
     if (!this.db) throw new Error('Database not initialized')
 
-    console.log('[HistoryStore] Running migration to v5 (session titles)')
+    devLog.log('[HistoryStore] Running migration to v5 (session titles)')
 
     this.db.exec(`
       -- Add session title source columns
@@ -446,7 +446,7 @@ class HistoryStore {
     `)
 
     this.db.pragma('user_version = 5')
-    console.log('[HistoryStore] Migration to v5 complete')
+    devLog.log('[HistoryStore] Migration to v5 complete')
   }
 
   /**
@@ -455,7 +455,7 @@ class HistoryStore {
   private migrateToV6(): void {
     if (!this.db) throw new Error('Database not initialized')
 
-    console.log('[HistoryStore] Running migration to v6 (git branch)')
+    devLog.log('[HistoryStore] Running migration to v6 (git branch)')
 
     this.db.exec(`
       -- Add git branch column
@@ -463,7 +463,7 @@ class HistoryStore {
     `)
 
     this.db.pragma('user_version = 6')
-    console.log('[HistoryStore] Migration to v6 complete')
+    devLog.log('[HistoryStore] Migration to v6 complete')
   }
 
   /**
@@ -472,7 +472,7 @@ class HistoryStore {
   private migrateToV7(): void {
     if (!this.db) throw new Error('Database not initialized')
 
-    console.log('[HistoryStore] Running migration to v7 (performance indexes)')
+    devLog.log('[HistoryStore] Running migration to v7 (performance indexes)')
 
     this.db.exec(`
       -- Index for frequent prompts query (role + timestamp filtering)
@@ -493,7 +493,7 @@ class HistoryStore {
     `)
 
     this.db.pragma('user_version = 7')
-    console.log('[HistoryStore] Migration to v7 complete')
+    devLog.log('[HistoryStore] Migration to v7 complete')
   }
 
   // ============================================================================
@@ -537,7 +537,7 @@ class HistoryStore {
       createdAt
     )
 
-    console.log(`[HistoryStore] Session created: ${session.id.slice(0, 8)}`)
+    devLog.log(`[HistoryStore] Session created: ${session.id.slice(0, 8)}`)
 
     // Invalidate enhanced prompts cache (new session may affect prompt statistics)
     this.invalidateEnhancedPromptsCache()
@@ -632,7 +632,7 @@ class HistoryStore {
     const durationMs = endedAt - session.startedAt
 
     this.updateSession(sessionId, { endedAt, durationMs })
-    console.log(
+    devLog.log(
       `[HistoryStore] Session ended: ${sessionId.slice(0, 8)} (duration: ${durationMs}ms)`
     )
   }
@@ -718,7 +718,7 @@ class HistoryStore {
 
     const stmt = this.db.prepare('DELETE FROM sessions WHERE id = ?')
     stmt.run(sessionId)
-    console.log(`[HistoryStore] Session deleted: ${sessionId.slice(0, 8)}`)
+    devLog.log(`[HistoryStore] Session deleted: ${sessionId.slice(0, 8)}`)
   }
 
   // ============================================================================
@@ -859,7 +859,7 @@ class HistoryStore {
     )
 
     insertMany(messages)
-    console.log(
+    devLog.log(
       `[HistoryStore] Added ${messages.length} messages from JSONL for session ${sessionId.slice(0, 8)}`
     )
   }
@@ -1741,7 +1741,7 @@ class HistoryStore {
     const result = stmt.run(cutoff)
 
     if (result.changes > 0) {
-      console.log(
+      devLog.log(
         `[HistoryStore] Cleaned up ${result.changes} stale ongoing sessions`
       )
     }
@@ -1785,7 +1785,7 @@ class HistoryStore {
     }
 
     if (deletedCount > 0) {
-      console.log(`[HistoryStore] Cleaned up ${deletedCount} sessions`)
+      devLog.log(`[HistoryStore] Cleaned up ${deletedCount} sessions`)
     }
 
     return deletedCount
@@ -1797,7 +1797,7 @@ class HistoryStore {
   vacuum(): void {
     if (!this.db) throw new Error('Database not initialized')
     this.db.exec('VACUUM')
-    console.log('[HistoryStore] Database vacuumed')
+    devLog.log('[HistoryStore] Database vacuumed')
   }
 
   /**
@@ -2050,13 +2050,13 @@ class HistoryStore {
       errors: 0,
     }
 
-    console.log('[HistoryStore] Starting re-sync...')
+    devLog.log('[HistoryStore] Starting re-sync...')
 
     // Scan all JSONL files
     const jsonlFiles = scanAllJsonlFiles()
     result.scanned = jsonlFiles.length
 
-    console.log(`[HistoryStore] Found ${jsonlFiles.length} JSONL files`)
+    devLog.log(`[HistoryStore] Found ${jsonlFiles.length} JSONL files`)
 
     for (const file of jsonlFiles) {
       try {
@@ -2069,7 +2069,7 @@ class HistoryStore {
         // Extract metadata from JSONL
         const metadata = await extractSessionMetadata(file.jsonlPath)
         if (!metadata) {
-          console.log(
+          devLog.log(
             `[HistoryStore] Could not extract metadata from ${file.sessionId.slice(0, 8)}`
           )
           result.errors++
@@ -2150,11 +2150,11 @@ class HistoryStore {
         }
 
         result.imported++
-        console.log(
+        devLog.log(
           `[HistoryStore] Imported session ${metadata.sessionId.slice(0, 8)} with ${messages.length} messages`
         )
       } catch (error) {
-        console.error(
+        devLog.error(
           `[HistoryStore] Error importing ${file.sessionId.slice(0, 8)}:`,
           error
         )
@@ -2162,7 +2162,7 @@ class HistoryStore {
       }
     }
 
-    console.log(
+    devLog.log(
       `[HistoryStore] Re-sync complete: ${result.imported} imported, ${result.skipped} skipped, ${result.errors} errors`
     )
 

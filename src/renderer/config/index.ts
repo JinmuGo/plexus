@@ -13,6 +13,7 @@ import {
   type Environment,
   type FeatureFlags,
 } from 'shared/config'
+import { devLog } from 'renderer/lib/logger'
 
 export interface RendererConfig {
   env: Environment
@@ -66,7 +67,7 @@ export async function initializeConfig(): Promise<RendererConfig> {
 
     return dynamicConfig
   } catch (error) {
-    console.error('[Config] Failed to initialize from main process:', error)
+    devLog.error('[Config] Failed to initialize from main process:', error)
     // Fallback to static config
     return getStaticConfig()
   }

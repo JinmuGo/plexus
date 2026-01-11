@@ -26,6 +26,7 @@ import {
   Timer,
   Pencil,
 } from 'lucide-react'
+import { devLog } from 'renderer/lib/logger'
 import type {
   ClaudeSession,
   PermissionDecision,
@@ -88,7 +89,7 @@ export function PermissionActions({
         }
         toast.success(messages[decision] || decision)
       } catch (error) {
-        console.error('[PermissionActions] Failed:', error)
+        devLog.error('[PermissionActions] Failed:', error)
         toast.error('Failed to respond to permission')
       } finally {
         setIsLoading(null)

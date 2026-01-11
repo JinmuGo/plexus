@@ -4,6 +4,7 @@
  * Common file operations for hook installers.
  */
 
+import { devLog } from '../../lib/utils'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
 import { app } from 'electron'
@@ -35,7 +36,7 @@ export function copyScriptWithPermissions(
     fs.chmodSync(destPath, permissions)
     return true
   } catch (error) {
-    console.error(`Failed to copy script: ${error}`)
+    devLog.error(`Failed to copy script: ${error}`)
     return false
   }
 }
@@ -53,7 +54,7 @@ export function readJsonSettings<T extends object>(
       return JSON.parse(content) as T
     }
   } catch (error) {
-    console.error(`Failed to read settings from ${filePath}:`, error)
+    devLog.error(`Failed to read settings from ${filePath}:`, error)
   }
   return defaultValue
 }
@@ -70,7 +71,7 @@ export function writeJsonSettings<T extends object>(
     fs.writeFileSync(filePath, content, 'utf-8')
     return true
   } catch (error) {
-    console.error(`Failed to write settings to ${filePath}:`, error)
+    devLog.error(`Failed to write settings to ${filePath}:`, error)
     return false
   }
 }
@@ -110,7 +111,7 @@ export function removeFile(filePath: string): boolean {
     }
     return false
   } catch (error) {
-    console.error(`Failed to remove file ${filePath}:`, error)
+    devLog.error(`Failed to remove file ${filePath}:`, error)
     return false
   }
 }

@@ -5,6 +5,7 @@
  * Listens to SessionStore events and creates activity entries.
  */
 
+import { devLog } from '../lib/utils'
 import type { SessionActivityEntry } from 'shared/hook-types'
 import { sessionStore, type SessionEvent } from './sessions'
 import { MAX_ENTRIES_PER_SESSION } from '../constants/sessions'
@@ -191,7 +192,7 @@ class ActivityLogStore {
       try {
         listener(sessionId, entry)
       } catch (error) {
-        console.error('[ActivityLogStore] Listener error:', error)
+        devLog.error('[ActivityLogStore] Listener error:', error)
       }
     }
   }
@@ -213,7 +214,7 @@ class ActivityLogStore {
     }
 
     if (toRemove.length > 0) {
-      console.log(`[ActivityLogStore] Cleaned up ${toRemove.length} sessions`)
+      devLog.log(`[ActivityLogStore] Cleaned up ${toRemove.length} sessions`)
     }
   }
 }

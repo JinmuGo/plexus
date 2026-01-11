@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from 'react'
 import type { Theme, ResolvedTheme } from 'shared/theme-types'
+import { devLog } from './logger'
 
 interface ThemeContextValue {
   theme: Theme
@@ -41,7 +42,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
         setThemeState(stored)
         setResolvedTheme(resolved)
       } catch (error) {
-        console.error('[ThemeProvider] Failed to load theme:', error)
+        devLog.error('[ThemeProvider] Failed to load theme:', error)
       } finally {
         setIsLoaded(true)
       }
@@ -85,7 +86,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
       const resolved = await window.App.theme.set(newTheme)
       setResolvedTheme(resolved)
     } catch (error) {
-      console.error('[ThemeProvider] Failed to set theme:', error)
+      devLog.error('[ThemeProvider] Failed to set theme:', error)
     } finally {
       // Remove transition class after animation completes
       requestAnimationFrame(() => {

@@ -4,6 +4,9 @@
  * Common utility functions used across the main process.
  */
 
+// Re-export devLog for convenience
+export { devLog } from './logger'
+
 /**
  * Generate a unique ID using timestamp and random string.
  * Used for database records and internal identifiers.

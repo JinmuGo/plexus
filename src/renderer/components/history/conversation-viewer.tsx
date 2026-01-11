@@ -11,6 +11,7 @@ import type {
   ToolExecution,
   ThinkingBlock,
 } from 'shared/history-types'
+import { devLog } from 'renderer/lib/logger'
 
 const { App } = window
 
@@ -97,7 +98,7 @@ export function ConversationViewer({
           setData(result)
         }
       } catch (error) {
-        console.error('Failed to load session:', error)
+        devLog.error('Failed to load session:', error)
         // Try fallback
         try {
           const result = await App.history.getSessionWithMessages(sessionId)
@@ -118,7 +119,7 @@ export function ConversationViewer({
       await navigator.clipboard.writeText(text)
       toast.success('Copied to clipboard')
     } catch (error) {
-      console.error('Failed to copy:', error)
+      devLog.error('Failed to copy:', error)
       toast.error('Failed to copy')
     }
   }, [])

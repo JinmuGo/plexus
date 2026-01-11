@@ -6,6 +6,7 @@
  */
 
 import { execSync } from 'node:child_process'
+import { devLog } from '../lib/utils'
 
 /**
  * Information about a process
@@ -55,7 +56,7 @@ export function buildProcessTree(): ProcessTree {
       tree.set(pid, { pid, ppid, command, tty })
     }
   } catch (error) {
-    console.error('[ProcessTree] Failed to build tree:', error)
+    devLog.error('[ProcessTree] Failed to build tree:', error)
   }
 
   return tree

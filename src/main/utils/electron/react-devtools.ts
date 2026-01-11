@@ -1,5 +1,6 @@
 import { resolve } from 'node:path'
 import { session } from 'electron'
+import { devLog } from '../../lib/utils'
 
 export async function loadReactDevtools() {
   const reactDevToolsPath = resolve(
@@ -14,8 +15,8 @@ export async function loadReactDevtools() {
       allowFileAccess: true,
     })
 
-    console.log('\nReact Developer Tools loaded!\n')
+    devLog.log('\nReact Developer Tools loaded!\n')
   } catch (err) {
-    console.error('Error loading React Developer Tools:', err)
+    devLog.error('Error loading React Developer Tools:', err)
   }
 }

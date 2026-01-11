@@ -3,6 +3,7 @@ import { Switch } from 'renderer/components/ui/switch'
 import { Button } from 'renderer/components/ui/button'
 import { Bell, BellOff, Volume2, VolumeX, RotateCcw } from 'lucide-react'
 import type { NotificationSettings } from 'shared/notification-types'
+import { devLog } from 'renderer/lib/logger'
 
 interface SettingRowProps {
   label: string
@@ -50,7 +51,7 @@ export function NotificationSettingsPanel() {
         const loaded = await window.App.notifications.getSettings()
         setSettings(loaded)
       } catch (error) {
-        console.error('Failed to load notification settings:', error)
+        devLog.error('Failed to load notification settings:', error)
       } finally {
         setLoading(false)
       }
@@ -72,7 +73,7 @@ export function NotificationSettingsPanel() {
       try {
         await window.App.notifications.saveSettings({ [key]: value })
       } catch (error) {
-        console.error('Failed to save notification settings:', error)
+        devLog.error('Failed to save notification settings:', error)
         // Revert on error
         setSettings(settings)
       }
@@ -87,7 +88,7 @@ export function NotificationSettingsPanel() {
       const loaded = await window.App.notifications.getSettings()
       setSettings(loaded)
     } catch (error) {
-      console.error('Failed to reset notification settings:', error)
+      devLog.error('Failed to reset notification settings:', error)
     }
   }, [])
 

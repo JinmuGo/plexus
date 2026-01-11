@@ -7,6 +7,7 @@
 
 import * as fs from 'node:fs'
 import * as path from 'node:path'
+import { devLog } from '../lib/utils'
 import {
   detectNodePath,
   ensureDirectory,
@@ -194,7 +195,7 @@ export async function installIfNeeded(): Promise<boolean> {
   try {
     // Check if Cursor is installed
     if (!isCursorInstalled()) {
-      console.log('[Cursor] Cursor not found, skipping hook installation')
+      devLog.log('[Cursor] Cursor not found, skipping hook installation')
       return false
     }
 
@@ -206,17 +207,17 @@ export async function installIfNeeded(): Promise<boolean> {
     const destPath = getDestScriptPath()
 
     if (!fileExists(sourcePath)) {
-      console.error('[Cursor] Source hook script not found:', sourcePath)
+      devLog.error('[Cursor] Source hook script not found:', sourcePath)
       return false
     }
 
     // Copy the script with executable permissions
     if (!copyScriptWithPermissions(sourcePath, destPath)) {
-      console.error('[Cursor] Failed to install hook script')
+      devLog.error('[Cursor] Failed to install hook script')
       return false
     }
 
-    console.log(`[Cursor] Hook script installed to ${destPath}`)
+    devLog.log(`[Cursor] Hook script installed to ${destPath}`)
 
     // Read existing hooks.json
     const config = readHooksConfig()
@@ -231,10 +232,10 @@ export async function installIfNeeded(): Promise<boolean> {
       return false
     }
 
-    console.log('[Cursor] Hooks registered in hooks.json')
+    devLog.log('[Cursor] Hooks registered in hooks.json')
     return true
   } catch (error) {
-    console.error('[Cursor] Failed to install hooks:', error)
+    devLog.error('[Cursor] Failed to install hooks:', error)
     return false
   }
 }
@@ -247,7 +248,7 @@ export async function uninstall(): Promise<boolean> {
     // Remove hook script
     const destPath = getDestScriptPath()
     if (removeFile(destPath)) {
-      console.log('[Cursor] Hook script removed')
+      devLog.log('[Cursor] Hook script removed')
     }
 
     // Remove from hooks.json
@@ -261,12 +262,12 @@ export async function uninstall(): Promise<boolean> {
 
       // Write updated config
       writeHooksConfig(config)
-      console.log('[Cursor] Hooks removed from hooks.json')
+      devLog.log('[Cursor] Hooks removed from hooks.json')
     }
 
     return true
   } catch (error) {
-    console.error('[Cursor] Failed to uninstall hooks:', error)
+    devLog.error('[Cursor] Failed to uninstall hooks:', error)
     return false
   }
 }

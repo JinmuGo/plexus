@@ -21,6 +21,7 @@ import {
   isValidSlackWebhookUrl,
   isValidDiscordWebhookUrl,
 } from 'shared/integration-types'
+import { devLog } from 'renderer/lib/logger'
 
 const { App } = window
 
@@ -45,7 +46,7 @@ function SlackWebhookCard() {
         setWebhookUrl(loaded.slack.webhookUrl || '')
         setLabel(loaded.slack.label || '')
       } catch (err) {
-        console.error('Failed to load integration settings:', err)
+        devLog.error('Failed to load integration settings:', err)
       } finally {
         setLoading(false)
       }
@@ -267,7 +268,7 @@ function DiscordWebhookCard() {
         setWebhookUrl(loaded.discord.webhookUrl || '')
         setLabel(loaded.discord.label || '')
       } catch (err) {
-        console.error('Failed to load integration settings:', err)
+        devLog.error('Failed to load integration settings:', err)
       } finally {
         setLoading(false)
       }

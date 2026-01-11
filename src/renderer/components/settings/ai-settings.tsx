@@ -10,6 +10,7 @@ import { Button } from 'renderer/components/ui/button'
 import { Input } from 'renderer/components/ui/input'
 import { Badge } from 'renderer/components/ui/badge'
 import type { AIProvider, AISettings } from 'shared/history-types'
+import { devLog } from 'renderer/lib/logger'
 
 const { App } = window
 
@@ -53,7 +54,7 @@ export function AISettingsPanel() {
       setHasKey({ claude, openai, gemini })
       setAiSettings(settings)
     } catch (error) {
-      console.error('Failed to load AI settings:', error)
+      devLog.error('Failed to load AI settings:', error)
     } finally {
       setLoading(false)
     }
@@ -73,7 +74,7 @@ export function AISettingsPanel() {
       setHasKey(prev => ({ ...prev, [selectedProvider]: true }))
       setApiKey('')
     } catch (err) {
-      console.error('Failed to save API key:', err)
+      devLog.error('Failed to save API key:', err)
     } finally {
       setIsSavingKey(false)
     }
@@ -91,7 +92,7 @@ export function AISettingsPanel() {
     try {
       await App.ai.saveSettings(aiSettings)
     } catch (err) {
-      console.error('Failed to save settings:', err)
+      devLog.error('Failed to save settings:', err)
     } finally {
       setIsSavingSettings(false)
     }

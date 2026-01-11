@@ -8,6 +8,7 @@
 import * as fs from 'node:fs'
 import * as path from 'node:path'
 import * as os from 'node:os'
+import { devLog } from '../lib/utils'
 import { jsonlParser } from './jsonl-parser'
 
 // Callback type for interrupt events
@@ -47,7 +48,7 @@ class SessionFileWatcher {
     this.stop()
 
     if (!fs.existsSync(this.filePath)) {
-      console.log(
+      devLog.log(
         `[InterruptWatcher] File not found, waiting for creation: ${this.sessionId.slice(0, 8)}`
       )
       // Poll for file creation
@@ -93,17 +94,17 @@ class SessionFileWatcher {
       })
 
       this.watcher.on('error', error => {
-        console.error(
+        devLog.error(
           `[InterruptWatcher] Watcher error for ${this.sessionId.slice(0, 8)}:`,
           error
         )
       })
 
-      console.log(
+      devLog.log(
         `[InterruptWatcher] Started watching: ${this.sessionId.slice(0, 8)}`
       )
     } catch (error) {
-      console.error(
+      devLog.error(
         `[InterruptWatcher] Failed to start watching ${this.sessionId.slice(0, 8)}:`,
         error
       )
@@ -134,21 +135,21 @@ class SessionFileWatcher {
       const result = jsonlParser.parseIncremental(this.sessionId, this.cwd)
 
       if (result.interruptDetected) {
-        console.log(
+        devLog.log(
           `[InterruptWatcher] Interrupt detected for ${this.sessionId.slice(0, 8)}`
         )
         this.onInterrupt(this.sessionId)
       }
 
       if (result.clearDetected) {
-        console.log(
+        devLog.log(
           `[InterruptWatcher] Clear detected for ${this.sessionId.slice(0, 8)}`
         )
       }
     } catch (error) {
       // File might have been deleted
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-        console.log(
+        devLog.log(
           `[InterruptWatcher] File deleted for ${this.sessionId.slice(0, 8)}`
         )
         this.stop()
@@ -197,7 +198,7 @@ class InterruptWatcherManager {
     }
 
     if (!this.handler) {
-      console.warn('[InterruptWatcher] No handler set, skipping watcher')
+      devLog.warn('[InterruptWatcher] No handler set, skipping watcher')
       return
     }
 
@@ -214,7 +215,7 @@ class InterruptWatcherManager {
     if (watcher) {
       watcher.stop()
       this.watchers.delete(sessionId)
-      console.log(
+      devLog.log(
         `[InterruptWatcher] Stopped watching: ${sessionId.slice(0, 8)}`
       )
     }
@@ -226,7 +227,7 @@ class InterruptWatcherManager {
   stopAll(): void {
     for (const [sessionId, watcher] of this.watchers) {
       watcher.stop()
-      console.log(
+      devLog.log(
         `[InterruptWatcher] Stopped watching: ${sessionId.slice(0, 8)}`
       )
     }

@@ -30,6 +30,7 @@ import {
 import { interruptWatcher } from '../watchers'
 import { agentWatcher } from '../watchers'
 import { findTargetByPid, isTmuxAvailable } from '../tmux'
+import { devLog } from '../lib/utils'
 
 /**
  * Monitor state
@@ -56,7 +57,7 @@ const state: MonitorState = {
  * Handle incoming hook events
  */
 function handleHookEvent(event: HookEvent): void {
-  console.log(
+  devLog.log(
     `[Monitor] Hook event: ${event.event} for ${event.sessionId.slice(0, 8)} status:${event.status}`
   )
 
@@ -119,12 +120,12 @@ async function detectTmuxPane(
     const target = await findTargetByPid(claudePid)
     if (target) {
       sessionStore.setTmuxTarget(sessionId, target)
-      console.log(
+      devLog.log(
         `[Monitor] Tmux target for ${sessionId.slice(0, 8)}: ${target.session}:${target.window}.${target.pane}`
       )
     }
   } catch (error) {
-    console.error(
+    devLog.error(
       `[Monitor] Failed to detect tmux pane for ${sessionId.slice(0, 8)}:`,
       error
     )
@@ -135,7 +136,7 @@ async function detectTmuxPane(
  * Handle permission failures (socket closed before response)
  */
 function handlePermissionFailure(sessionId: string, toolUseId: string): void {
-  console.warn(
+  devLog.warn(
     `[Monitor] Permission failed for ${sessionId.slice(0, 8)} tool:${toolUseId.slice(0, 12)}`
   )
   sessionStore.clearPermission(sessionId, toolUseId)
@@ -145,7 +146,7 @@ function handlePermissionFailure(sessionId: string, toolUseId: string): void {
  * Handle interrupt detection
  */
 function handleInterrupt(sessionId: string): void {
-  console.log(`[Monitor] Interrupt detected for ${sessionId.slice(0, 8)}`)
+  devLog.log(`[Monitor] Interrupt detected for ${sessionId.slice(0, 8)}`)
   sessionStore.updatePhase(sessionId, 'waitingForInput')
 }
 
@@ -162,7 +163,7 @@ function handleAgentToolsUpdate(
     isCompleted: boolean
   }>
 ): void {
-  console.log(`[Monitor] Agent tools updated for ${sessionId.slice(0, 8)}`)
+  devLog.log(`[Monitor] Agent tools updated for ${sessionId.slice(0, 8)}`)
   // TODO: Update session store with subagent tool info
 }
 
@@ -171,25 +172,25 @@ function handleAgentToolsUpdate(
  */
 export async function startMonitoring(): Promise<void> {
   if (state.isStarted) {
-    console.log('[Monitor] Already started')
+    devLog.log('[Monitor] Already started')
     return
   }
 
-  console.log('[Monitor] Starting session monitor...')
+  devLog.log('[Monitor] Starting session monitor...')
 
   // Install Claude Code hooks if Claude Code is available
   if (isClaudeCodeInstalled()) {
     try {
       await installClaudeHooks()
       state.claudeHooksInstalled = isClaudeHooksInstalled()
-      console.log(
+      devLog.log(
         `[Monitor] Claude hooks ${state.claudeHooksInstalled ? 'installed' : 'not installed'}`
       )
     } catch (error) {
-      console.error('[Monitor] Failed to install Claude hooks:', error)
+      devLog.error('[Monitor] Failed to install Claude hooks:', error)
     }
   } else {
-    console.log('[Monitor] Claude Code not found, skipping Claude hooks')
+    devLog.log('[Monitor] Claude Code not found, skipping Claude hooks')
   }
 
   // Install Gemini CLI hooks if Gemini is available
@@ -197,14 +198,14 @@ export async function startMonitoring(): Promise<void> {
     try {
       await installGeminiHooks()
       state.geminiHooksInstalled = isGeminiHooksInstalled()
-      console.log(
+      devLog.log(
         `[Monitor] Gemini hooks ${state.geminiHooksInstalled ? 'installed' : 'not installed'}`
       )
     } catch (error) {
-      console.error('[Monitor] Failed to install Gemini hooks:', error)
+      devLog.error('[Monitor] Failed to install Gemini hooks:', error)
     }
   } else {
-    console.log('[Monitor] Gemini CLI not found, skipping Gemini hooks')
+    devLog.log('[Monitor] Gemini CLI not found, skipping Gemini hooks')
   }
 
   // Install Cursor IDE hooks if Cursor is available
@@ -212,20 +213,20 @@ export async function startMonitoring(): Promise<void> {
     try {
       await installCursorHooks()
       state.cursorHooksInstalled = isCursorHooksInstalled()
-      console.log(
+      devLog.log(
         `[Monitor] Cursor hooks ${state.cursorHooksInstalled ? 'installed' : 'not installed'}`
       )
     } catch (error) {
-      console.error('[Monitor] Failed to install Cursor hooks:', error)
+      devLog.error('[Monitor] Failed to install Cursor hooks:', error)
     }
   } else {
-    console.log('[Monitor] Cursor IDE not found, skipping Cursor hooks')
+    devLog.log('[Monitor] Cursor IDE not found, skipping Cursor hooks')
   }
 
   // Check tmux availability
   state.tmuxAvailable = isTmuxAvailable()
   if (state.tmuxAvailable) {
-    console.log('[Monitor] Tmux available')
+    devLog.log('[Monitor] Tmux available')
   }
 
   // Set up interrupt watcher handler
@@ -239,7 +240,7 @@ export async function startMonitoring(): Promise<void> {
   state.hookServerRunning = true
 
   state.isStarted = true
-  console.log('[Monitor] Session monitor started')
+  devLog.log('[Monitor] Session monitor started')
 }
 
 /**
@@ -250,7 +251,7 @@ export function stopMonitoring(): void {
     return
   }
 
-  console.log('[Monitor] Stopping session monitor...')
+  devLog.log('[Monitor] Stopping session monitor...')
 
   // Stop hook socket server
   hookSocketServer.stop()
@@ -264,7 +265,7 @@ export function stopMonitoring(): void {
   sessionStore.archiveEndedSessions(0)
 
   state.isStarted = false
-  console.log('[Monitor] Session monitor stopped')
+  devLog.log('[Monitor] Session monitor stopped')
 }
 
 /**
@@ -272,7 +273,7 @@ export function stopMonitoring(): void {
  */
 export function approvePermission(sessionId: string): void {
   hookSocketServer.respondToPermissionBySession(sessionId, 'allow')
-  console.log(`[Monitor] Approved permission for ${sessionId.slice(0, 8)}`)
+  devLog.log(`[Monitor] Approved permission for ${sessionId.slice(0, 8)}`)
 }
 
 /**
@@ -280,7 +281,7 @@ export function approvePermission(sessionId: string): void {
  */
 export function denyPermission(sessionId: string, reason?: string): void {
   hookSocketServer.respondToPermissionBySession(sessionId, 'deny', { reason })
-  console.log(`[Monitor] Denied permission for ${sessionId.slice(0, 8)}`)
+  devLog.log(`[Monitor] Denied permission for ${sessionId.slice(0, 8)}`)
 }
 
 /**

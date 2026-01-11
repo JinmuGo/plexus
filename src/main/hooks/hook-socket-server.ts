@@ -20,6 +20,7 @@ import {
   createHITLMessage,
 } from 'shared/hitl-types'
 import { autoAllowStore } from '../store/auto-allow-store'
+import { devLog } from '../lib/utils'
 
 // Re-export socket path
 export { SOCKET_PATH }
@@ -98,7 +99,7 @@ function cacheToolUseId(event: HookEvent): void {
     const firstKey = state.toolUseIdCache.keys().next().value
     if (firstKey) {
       state.toolUseIdCache.delete(firstKey)
-      console.log(`[HookSocket] Cache full, evicted oldest entry`)
+      devLog.log(`[HookSocket] Cache full, evicted oldest entry`)
     }
   }
 
@@ -107,7 +108,7 @@ function cacheToolUseId(event: HookEvent): void {
   queue.push(event.toolUseId)
   state.toolUseIdCache.set(key, queue)
 
-  console.log(
+  devLog.log(
     `[HookSocket] Cached tool_use_id for ${event.sessionId.slice(0, 8)} tool:${event.tool} id:${event.toolUseId.slice(0, 12)}`
   )
 }
@@ -134,7 +135,7 @@ function cleanupStalePermissions(): void {
     if (pending && !pending.failureReported) {
       pending.failureReported = true
 
-      console.log(
+      devLog.log(
         `[HookSocket] Permission timeout for ${pending.sessionId.slice(0, 8)} tool:${toolUseId.slice(0, 12)}`
       )
 
@@ -152,9 +153,7 @@ function cleanupStalePermissions(): void {
   }
 
   if (staleIds.length > 0) {
-    console.log(
-      `[HookSocket] Cleaned up ${staleIds.length} stale permission(s)`
-    )
+    devLog.log(`[HookSocket] Cleaned up ${staleIds.length} stale permission(s)`)
   }
 }
 
@@ -175,7 +174,7 @@ function popCachedToolUseId(event: HookEvent): string | undefined {
     state.toolUseIdCache.delete(key)
   }
 
-  console.log(
+  devLog.log(
     `[HookSocket] Retrieved cached tool_use_id for ${event.sessionId.slice(0, 8)} tool:${event.tool} id:${toolUseId?.slice(0, 12)}`
   )
 
@@ -199,7 +198,7 @@ function cleanupCache(sessionId: string): void {
   }
 
   if (keysToRemove.length > 0) {
-    console.log(
+    devLog.log(
       `[HookSocket] Cleaned up ${keysToRemove.length} cache entries for session ${sessionId.slice(0, 8)}`
     )
   }
@@ -212,7 +211,7 @@ function handleClient(socket: net.Socket): void {
   const clientId = ++state.clientCounter
   let buffer = ''
 
-  console.log(`[HookSocket] Client ${clientId} connected`)
+  devLog.log(`[HookSocket] Client ${clientId} connected`)
 
   socket.on('data', data => {
     buffer += data.toString()
@@ -228,11 +227,11 @@ function handleClient(socket: net.Socket): void {
   })
 
   socket.on('error', error => {
-    console.error(`[HookSocket] Client ${clientId} error:`, error.message)
+    devLog.error(`[HookSocket] Client ${clientId} error:`, error.message)
   })
 
   socket.on('close', () => {
-    console.log(`[HookSocket] Client ${clientId} disconnected`)
+    devLog.log(`[HookSocket] Client ${clientId} disconnected`)
 
     // Check if this socket had a pending permission request
     for (const [toolUseId, pending] of state.pendingPermissions.entries()) {
@@ -240,7 +239,7 @@ function handleClient(socket: net.Socket): void {
         // Fix #2: Check failureReported to prevent duplicate notifications
         if (!pending.failureReported) {
           pending.failureReported = true
-          console.log(
+          devLog.log(
             `[HookSocket] Socket closed for pending permission ${pending.sessionId.slice(0, 8)} tool:${toolUseId.slice(0, 12)}`
           )
           state.pendingPermissions.delete(toolUseId)
@@ -263,7 +262,7 @@ function handleEvent(
   socket: net.Socket,
   clientId: number
 ): void {
-  console.log(
+  devLog.log(
     `[HookSocket] Received: ${event.event} for ${event.sessionId.slice(0, 8)}`
   )
 
@@ -284,7 +283,7 @@ function handleEvent(
 
     // Check if this tool is auto-allowed for the session
     if (autoAllowStore.isAutoAllowed(event.sessionId, toolName)) {
-      console.log(
+      devLog.log(
         `[HookSocket] Auto-allowing '${toolName}' for ${event.sessionId.slice(0, 8)}`
       )
 
@@ -294,7 +293,7 @@ function handleEvent(
         socket.write(JSON.stringify(response))
         socket.end()
       } catch (error) {
-        console.error('[HookSocket] Failed to send auto-allow response:', error)
+        devLog.error('[HookSocket] Failed to send auto-allow response:', error)
       }
 
       // Still notify handler for UI update (but with no pending permission)
@@ -314,19 +313,19 @@ function handleEvent(
       if (event.agent === 'gemini' && event.tool) {
         const timeBucket = Math.floor(Date.now() / 1000)
         toolUseId = `gemini_${event.sessionId.slice(0, 8)}_${event.tool}_${timeBucket}`
-        console.log(
+        devLog.log(
           `[HookSocket] Generated Gemini-compatible toolUseId: ${toolUseId.slice(0, 20)}`
         )
       } else {
         // Fallback to synthetic ID for other agents
         toolUseId = `synthetic_${event.sessionId.slice(0, 8)}_${Date.now()}`
-        console.warn(
+        devLog.warn(
           `[HookSocket] Generated synthetic toolUseId for ${event.sessionId.slice(0, 8)}: ${toolUseId.slice(0, 20)}`
         )
       }
     }
 
-    console.log(
+    devLog.log(
       `[HookSocket] Permission request - keeping socket open for ${event.sessionId.slice(0, 8)} tool:${toolUseId.slice(0, 12)}`
     )
 
@@ -340,7 +339,7 @@ function handleEvent(
       | undefined
 
     if (existingPending) {
-      console.log(
+      devLog.log(
         `[HookSocket] Duplicate permission request for ${event.sessionId.slice(0, 8)} tool:${toolUseId.slice(0, 12)} - closing old socket, using new one`
       )
       // Close the old socket (will return 'ask' to let Gemini CLI handle it)
@@ -419,7 +418,7 @@ export function start(
   onPermissionFailure?: PermissionFailureHandler
 ): void {
   if (state.server) {
-    console.log('[HookSocket] Server already running')
+    devLog.log('[HookSocket] Server already running')
     return
   }
 
@@ -434,13 +433,13 @@ export function start(
   state.server = net.createServer(handleClient)
 
   state.server.on('error', error => {
-    console.error('[HookSocket] Server error:', error)
+    devLog.error('[HookSocket] Server error:', error)
   })
 
   state.server.listen(SOCKET_PATH, () => {
     // Set socket permissions (world-readable/writable)
     fs.chmodSync(SOCKET_PATH, 0o777)
-    console.log(`[HookSocket] Listening on ${SOCKET_PATH}`)
+    devLog.log(`[HookSocket] Listening on ${SOCKET_PATH}`)
   })
 
   // Start periodic cleanup of stale permissions
@@ -481,7 +480,7 @@ export function stop(): void {
   state.toolUseIdCache.clear()
 
   state.server.close(() => {
-    console.log('[HookSocket] Server stopped')
+    devLog.log('[HookSocket] Server stopped')
   })
 
   // Remove socket file
@@ -518,7 +517,7 @@ export function respondToPermission(
     | undefined
 
   if (!pending) {
-    console.log(
+    devLog.log(
       `[HookSocket] No pending permission for toolUseId: ${toolUseId.slice(0, 12)}`
     )
     return
@@ -535,7 +534,7 @@ export function respondToPermission(
   const socket = pending.socket
 
   if (!socket || socket.destroyed) {
-    console.warn(
+    devLog.warn(
       `[HookSocket] Socket already closed for ${pending.sessionId.slice(0, 8)}`
     )
     state.permissionFailureHandler?.(pending.sessionId, toolUseId)
@@ -543,7 +542,7 @@ export function respondToPermission(
   }
 
   const age = (Date.now() - pending.receivedAt) / 1000
-  console.log(
+  devLog.log(
     `[HookSocket] Sending response: ${decision} for ${pending.sessionId.slice(0, 8)} tool:${toolUseId.slice(0, 12)} (age: ${age.toFixed(1)}s)`
   )
 
@@ -551,7 +550,7 @@ export function respondToPermission(
     socket.write(JSON.stringify(response))
     socket.end()
   } catch (error) {
-    console.error('[HookSocket] Failed to send response:', error)
+    devLog.error('[HookSocket] Failed to send response:', error)
     state.permissionFailureHandler?.(pending.sessionId, toolUseId)
   }
 }
@@ -576,7 +575,7 @@ export function respondToPermissionBySession(
   }
 
   if (!mostRecent) {
-    console.log(
+    devLog.log(
       `[HookSocket] No pending permission for session: ${sessionId.slice(0, 8)}`
     )
     return
@@ -593,7 +592,7 @@ export function cancelPendingPermissions(sessionId: string): void {
 
   for (const [toolUseId, pending] of state.pendingPermissions.entries()) {
     if (pending.sessionId === sessionId) {
-      console.log(
+      devLog.log(
         `[HookSocket] Cleaning up stale permission for ${sessionId.slice(0, 8)} tool:${toolUseId.slice(0, 12)}`
       )
 
@@ -624,7 +623,7 @@ export function cancelPendingPermission(toolUseId: string): void {
     return
   }
 
-  console.log(
+  devLog.log(
     `[HookSocket] Tool completed externally, closing socket for ${pending.sessionId.slice(0, 8)} tool:${toolUseId.slice(0, 12)}`
   )
 

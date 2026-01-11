@@ -8,6 +8,8 @@
  * - Event processing rates
  */
 
+import { devLog } from '../lib/utils'
+
 // Metric types
 interface PerformanceMetric {
   name: string
@@ -58,12 +60,12 @@ class PerformanceMonitor {
    */
   start(): void {
     if (this.isRunning) {
-      console.log('[PerformanceMonitor] Already running')
+      devLog.log('[PerformanceMonitor] Already running')
       return
     }
 
     this.isRunning = true
-    console.log('[PerformanceMonitor] Starting performance monitoring')
+    devLog.log('[PerformanceMonitor] Starting performance monitoring')
 
     // Sample metrics periodically
     this.sampleTimer = setInterval(() => {
@@ -97,7 +99,7 @@ class PerformanceMonitor {
       this.logTimer = null
     }
 
-    console.log('[PerformanceMonitor] Stopped')
+    devLog.log('[PerformanceMonitor] Stopped')
   }
 
   /**
@@ -222,25 +224,25 @@ class PerformanceMonitor {
       return `${mb.toFixed(1)}MB`
     }
 
-    console.log('[PerformanceMonitor] Summary:')
-    console.log(
+    devLog.log('[PerformanceMonitor] Summary:')
+    devLog.log(
       `  Memory: ${formatBytes(summary.memoryUsage.heapUsed)} / ${formatBytes(summary.memoryUsage.heapTotal)} (RSS: ${formatBytes(summary.memoryUsage.rss)})`
     )
 
     if (summary.ipcLatency.count > 0) {
-      console.log(
+      devLog.log(
         `  IPC Latency: avg ${summary.ipcLatency.avg.toFixed(2)}ms, max ${summary.ipcLatency.max.toFixed(2)}ms`
       )
     }
 
     if (summary.dbQueryTime.count > 0) {
-      console.log(
+      devLog.log(
         `  DB Query: avg ${summary.dbQueryTime.avg.toFixed(2)}ms, max ${summary.dbQueryTime.max.toFixed(2)}ms`
       )
     }
 
-    console.log(`  Event Rate: ${summary.eventRate.perSecond.toFixed(1)}/sec`)
-    console.log(`  Uptime: ${(summary.uptime / 60).toFixed(1)} minutes`)
+    devLog.log(`  Event Rate: ${summary.eventRate.perSecond.toFixed(1)}/sec`)
+    devLog.log(`  Uptime: ${(summary.uptime / 60).toFixed(1)} minutes`)
   }
 
   /**

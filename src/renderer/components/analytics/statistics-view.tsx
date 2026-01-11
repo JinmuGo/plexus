@@ -25,6 +25,7 @@ import {
   ProjectBreakdown,
   ProductivityInsights,
 } from './statistics'
+import { devLog } from 'renderer/lib/logger'
 
 const { App } = window
 
@@ -52,7 +53,7 @@ export function StatisticsView() {
       const statistics = await App.history.getExtendedStatistics()
       setStats(statistics)
     } catch (error) {
-      console.error('Failed to load statistics:', error)
+      devLog.error('Failed to load statistics:', error)
     } finally {
       setIsLoading(false)
     }

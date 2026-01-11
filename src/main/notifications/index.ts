@@ -1,4 +1,5 @@
 import { Notification, type BrowserWindow } from 'electron'
+import { devLog } from '../lib/utils'
 import type { ClaudeSession, PermissionContext } from 'shared/hook-types'
 import { notificationSettingsStore } from '../store/notification-settings'
 import { integrationSettingsStore } from '../store/integration-settings'
@@ -61,12 +62,12 @@ export function createNotificationManager({
         if (session && session.phase !== 'ended') {
           const result = await jumpToAgent(session)
           if (result.success) {
-            console.log(
+            devLog.log(
               `[Notification] Jumped to agent via ${result.method} for session ${sessionId.slice(0, 8)}`
             )
             return
           }
-          console.warn(`[Notification] Jump to agent failed: ${result.error}`)
+          devLog.warn(`[Notification] Jump to agent failed: ${result.error}`)
         }
       }
 
@@ -121,7 +122,7 @@ export function createNotificationManager({
 
     // Check if permission request notifications are enabled
     if (!settings.permissionRequest) {
-      console.log(
+      devLog.log(
         `[Notification] Permission request skipped (disabled): ${context.toolName} for session ${session.id.slice(0, 8)}`
       )
       return
@@ -134,7 +135,7 @@ export function createNotificationManager({
 
     // Send native OS notification with sessionId for jump-to-agent on click
     showOsNotification('Permission Required', body, session.id)
-    console.log(
+    devLog.log(
       `[Notification] Permission request: ${context.toolName} for session ${session.id.slice(0, 8)}`
     )
 
@@ -142,7 +143,7 @@ export function createNotificationManager({
     const integrationSettings = integrationSettingsStore.getSettings()
     webhookNotifyPermission(integrationSettings, session, context).catch(
       error => {
-        console.error('[Notification] Failed to send to webhooks:', error)
+        devLog.error('[Notification] Failed to send to webhooks:', error)
       }
     )
   }
@@ -153,7 +154,7 @@ export function createNotificationManager({
 
     // Check if session ended notifications are enabled
     if (!settings.sessionEnded) {
-      console.log(
+      devLog.log(
         `[Notification] Session ended skipped (disabled): ${session.id.slice(0, 8)}`
       )
       return
@@ -165,7 +166,7 @@ export function createNotificationManager({
     // Send to webhooks (Slack, Discord)
     const integrationSettings = integrationSettingsStore.getSettings()
     webhookNotifySessionEnded(integrationSettings, session).catch(error => {
-      console.error('[Notification] Failed to send to webhooks:', error)
+      devLog.error('[Notification] Failed to send to webhooks:', error)
     })
   }
 

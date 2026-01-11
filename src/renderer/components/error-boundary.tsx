@@ -8,6 +8,7 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
 import { AlertTriangle, RefreshCw } from 'lucide-react'
 import { Button } from './ui/button'
+import { devLog } from 'renderer/lib/logger'
 
 interface ErrorBoundaryProps {
   children: ReactNode
@@ -45,11 +46,8 @@ export class ErrorBoundary extends Component<
 
     // Log to console in development
     if (process.env.NODE_ENV === 'development') {
-      console.error('[ErrorBoundary] Caught error:', error)
-      console.error(
-        '[ErrorBoundary] Component stack:',
-        errorInfo.componentStack
-      )
+      devLog.error('[ErrorBoundary] Caught error:', error)
+      devLog.error('[ErrorBoundary] Component stack:', errorInfo.componentStack)
     }
 
     // Call optional error callback

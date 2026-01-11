@@ -42,6 +42,7 @@ import type {
 } from 'shared/history-types'
 import type { AgentType } from 'shared/hook-types'
 import type { HistoryViewMode } from 'shared/ui-types'
+import { devLog } from 'renderer/lib/logger'
 
 // Date filter options - using relative days for predictable behavior
 type DateFilterOption = 'all' | 'today' | 'last7days' | 'last30days'
@@ -202,7 +203,7 @@ export function HistoryView() {
       const result = await App.history.getSessions(options)
       setSessions(result)
     } catch (err) {
-      console.error('Failed to load history sessions:', err)
+      devLog.error('Failed to load history sessions:', err)
       setError('Failed to load sessions')
     } finally {
       setIsLoading(false)
@@ -248,7 +249,7 @@ export function HistoryView() {
       }
       setSessions(Array.from(uniqueSessions.values()))
     } catch (error) {
-      console.error('Failed to search:', error)
+      devLog.error('Failed to search:', error)
     } finally {
       setIsLoading(false)
     }
@@ -646,7 +647,7 @@ export function HistoryView() {
       }
       toast.success('Session deleted')
     } catch (error) {
-      console.error('Failed to delete session:', error)
+      devLog.error('Failed to delete session:', error)
       toast.error('Failed to delete session')
     } finally {
       setDeleteConfirmSessionId(null)

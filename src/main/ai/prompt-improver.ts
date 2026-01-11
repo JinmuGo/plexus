@@ -5,6 +5,7 @@
  * for better clarity and effectiveness when working with AI assistants.
  */
 
+import { devLog } from '../lib/utils'
 import { safeStorage } from 'electron'
 import { app } from 'electron'
 import {
@@ -142,7 +143,7 @@ function saveApiKeys(keys: ApiKeyStorage): void {
  */
 export function setApiKey(provider: AIProvider, key: string): void {
   if (!safeStorage.isEncryptionAvailable()) {
-    console.warn(
+    devLog.warn(
       '[PromptImprover] Encryption not available, storing key unencrypted'
     )
     const keys = loadApiKeys()

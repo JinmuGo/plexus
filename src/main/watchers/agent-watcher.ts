@@ -8,6 +8,7 @@
 import * as fs from 'node:fs'
 import * as path from 'node:path'
 import * as os from 'node:os'
+import { devLog } from '../lib/utils'
 import type { SubagentToolInfo } from 'shared/hook-types'
 import { jsonlParser } from './jsonl-parser'
 
@@ -62,7 +63,7 @@ class AgentFileWatcher {
     this.stop()
 
     if (!fs.existsSync(this.filePath)) {
-      console.log(
+      devLog.log(
         `[AgentWatcher] File not found, waiting for creation: agent-${this.agentId.slice(0, 8)}`
       )
       this.waitForFile()
@@ -101,17 +102,17 @@ class AgentFileWatcher {
       })
 
       this.watcher.on('error', error => {
-        console.error(
+        devLog.error(
           `[AgentWatcher] Watcher error for agent-${this.agentId.slice(0, 8)}:`,
           error
         )
       })
 
-      console.log(
+      devLog.log(
         `[AgentWatcher] Started watching agent-${this.agentId.slice(0, 8)} for task ${this.taskToolId.slice(0, 12)}`
       )
     } catch (error) {
-      console.error(
+      devLog.error(
         `[AgentWatcher] Failed to start watching agent-${this.agentId.slice(0, 8)}:`,
         error
       )
@@ -132,7 +133,7 @@ class AgentFileWatcher {
     if (!hasChanges) return
 
     this.seenToolIds = new Set(tools.map(t => t.id))
-    console.log(
+    devLog.log(
       `[AgentWatcher] Agent ${this.agentId.slice(0, 8)} has ${tools.length} tools`
     )
 
@@ -146,7 +147,7 @@ class AgentFileWatcher {
     if (this.watcher) {
       this.watcher.close()
       this.watcher = null
-      console.log(
+      devLog.log(
         `[AgentWatcher] Stopped watching agent-${this.agentId.slice(0, 8)}`
       )
     }
@@ -196,7 +197,7 @@ class AgentWatcherManager {
     }
 
     if (!this.handler) {
-      console.warn('[AgentWatcher] No handler set, skipping watcher')
+      devLog.warn('[AgentWatcher] No handler set, skipping watcher')
       return
     }
 
@@ -210,7 +211,7 @@ class AgentWatcherManager {
     watcher.start()
     this.watchers.set(key, watcher)
 
-    console.log(
+    devLog.log(
       `[AgentWatcher] Started watcher for task ${taskToolId.slice(0, 12)}`
     )
   }
@@ -249,7 +250,7 @@ class AgentWatcherManager {
     }
 
     if (keysToRemove.length > 0) {
-      console.log(
+      devLog.log(
         `[AgentWatcher] Stopped ${keysToRemove.length} watchers for session ${sessionId.slice(0, 8)}`
       )
     }
@@ -263,7 +264,7 @@ class AgentWatcherManager {
       watcher.stop()
     }
     this.watchers.clear()
-    console.log('[AgentWatcher] Stopped all watchers')
+    devLog.log('[AgentWatcher] Stopped all watchers')
   }
 
   /**

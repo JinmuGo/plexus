@@ -1,4 +1,5 @@
 import { Tray, nativeImage, Menu, app } from 'electron'
+import { devLog } from '../../lib/utils'
 
 import type { TrayManagerProps, TrayManager, TrayStatus } from 'shared/types'
 import type { ClaudeSession, AgentType, SessionPhase } from 'shared/hook-types'
@@ -164,7 +165,7 @@ export function createTrayManager({
           label: `${agent}: ${name}${sublabel}`,
           click: async () => {
             const result = await jumpToAgent(session)
-            console.log(
+            devLog.log(
               `[Tray] Jump to ${session.agent}: ${result.success ? result.method : result.error}`
             )
           },
@@ -236,7 +237,7 @@ export function createTrayManager({
     // Update context menu
     updateContextMenu()
 
-    console.log(`[Tray] Status changed to: ${status}`)
+    devLog.log(`[Tray] Status changed to: ${status}`)
   }
 
   const destroy = () => {

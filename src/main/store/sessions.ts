@@ -29,6 +29,7 @@ import {
   CURSOR_INACTIVITY_THRESHOLD_MS,
   COMPACTING_TIMEOUT_MS,
 } from '../constants/sessions'
+import { devLog } from '../lib/utils'
 
 // Session event types
 type SessionEventType =
@@ -252,7 +253,7 @@ class SessionStore {
       try {
         listener(event)
       } catch (error) {
-        console.error('[SessionStore] Listener error:', error)
+        devLog.error('[SessionStore] Listener error:', error)
       }
     }
   }
@@ -304,7 +305,7 @@ class SessionStore {
     oldSession: ClaudeSession,
     newSessionId: string
   ): void {
-    console.log(
+    devLog.log(
       `[SessionStore] Replacing session ${oldSession.id.slice(0, 8)} → ${newSessionId.slice(0, 8)} (PID: ${oldSession.pid})`
     )
 
@@ -324,7 +325,7 @@ class SessionStore {
     // Remove old session from Map after delay for history capture
     setTimeout(() => {
       this.sessions.delete(oldSession.id)
-      console.log(
+      devLog.log(
         `[SessionStore] Old session ${oldSession.id.slice(0, 8)} removed after replacement`
       )
     }, 3000)
@@ -376,7 +377,7 @@ class SessionStore {
           const tree = buildProcessTree()
           inTmux = isInTmux(pid, tree)
         } catch (error) {
-          console.error('[SessionStore] Failed to check tmux status:', error)
+          devLog.error('[SessionStore] Failed to check tmux status:', error)
         }
       }
 
@@ -413,7 +414,7 @@ class SessionStore {
         this.pidToSessionId.set(pid, sessionId)
       }
 
-      console.log(
+      devLog.log(
         `[SessionStore] Session created: ${sessionId.slice(0, 8)} (${session.displayTitle}) [${agent}] [tmux: ${inTmux}] [project: ${projectName}] [branch: ${gitBranch ?? 'none'}]`
       )
 
@@ -447,7 +448,7 @@ class SessionStore {
     if (messageInfo) {
       session.lastMessage = messageInfo.message
       session.lastMessageRole = messageInfo.role
-      console.log(
+      devLog.log(
         `[SessionStore] Updated message for ${sessionId.slice(0, 8)}: "${messageInfo.message}" (${messageInfo.role})`
       )
     }
@@ -466,7 +467,7 @@ class SessionStore {
         session.projectName,
         session.cwd
       )
-      console.log(
+      devLog.log(
         `[SessionStore] Session ${sessionId.slice(0, 8)} title updated: "${session.displayTitle}"`
       )
     }
@@ -491,7 +492,7 @@ class SessionStore {
         session.compactingStartedAt = undefined
       }
 
-      console.log(
+      devLog.log(
         `[SessionStore] Session ${sessionId.slice(0, 8)} phase: ${previousPhase} → ${newPhase}`
       )
 
@@ -543,7 +544,7 @@ class SessionStore {
             receivedAt: Date.now(),
           }
           session.questionContext = questionContext
-          console.log(
+          devLog.log(
             `[SessionStore] Question context set for ${sessionId.slice(0, 8)}: "${questionInfo.question.slice(0, 50)}..."`
           )
         }
@@ -568,7 +569,7 @@ class SessionStore {
         // Use delete directly to avoid emitting 'remove' event twice
         setTimeout(() => {
           this.sessions.delete(sessionId)
-          console.log(
+          devLog.log(
             `[SessionStore] Session ${sessionId.slice(0, 8)} removed after ending`
           )
         }, 3000)
@@ -615,14 +616,14 @@ class SessionStore {
    */
   clearPermission(sessionId: string, _toolUseId: string): void {
     const session = this.sessions.get(sessionId)
-    console.log(
+    devLog.log(
       `[SessionStore] clearPermission called for ${sessionId.slice(0, 8)}, session exists: ${!!session}, hasPermission: ${!!session?.activePermission}`
     )
     if (session?.activePermission) {
       const previousPhase = session.phase
       session.activePermission = undefined
       session.phase = 'processing' // Move to processing after permission resolved
-      console.log(
+      devLog.log(
         `[SessionStore] Session ${sessionId.slice(0, 8)} phase: ${previousPhase} → processing (permission cleared)`
       )
 
@@ -695,7 +696,7 @@ class SessionStore {
         const session = this.sessions.get(sessionId)
         if (session) {
           session.tmuxTarget = target
-          console.log(
+          devLog.log(
             `[SessionStore] Session ${sessionId.slice(0, 8)} tmux target: ${target.session}:${target.window}.${target.pane}`
           )
           this.emit({
@@ -705,7 +706,7 @@ class SessionStore {
         }
       }
     } catch (error) {
-      console.error(
+      devLog.error(
         `[SessionStore] Failed to resolve tmux target for ${sessionId.slice(0, 8)}:`,
         error
       )
@@ -767,7 +768,7 @@ class SessionStore {
       }
       session.displayTitle = titleResult.displayTitle
 
-      console.log(
+      devLog.log(
         `[SessionStore] Session ${sessionId.slice(0, 8)} title refreshed: "${session.displayTitle}"`
       )
       this.emit({
@@ -804,7 +805,7 @@ class SessionStore {
           session,
         })
       }
-      console.log(`[SessionStore] Session removed: ${sessionId.slice(0, 8)}`)
+      devLog.log(`[SessionStore] Session removed: ${sessionId.slice(0, 8)}`)
     }
   }
 
@@ -817,7 +818,7 @@ class SessionStore {
   ): Promise<boolean> {
     const session = this.sessions.get(sessionId)
     if (!session) {
-      console.log(
+      devLog.log(
         `[SessionStore] Cannot terminate: session ${sessionId.slice(0, 8)} not found`
       )
       return false
@@ -827,14 +828,14 @@ class SessionStore {
     if (session.pid) {
       try {
         process.kill(session.pid, signal)
-        console.log(
+        devLog.log(
           `[SessionStore] Sent ${signal} to PID ${session.pid} (session ${sessionId.slice(0, 8)})`
         )
         this.updatePhase(sessionId, 'ended')
         return true
       } catch (error) {
         // Process might already be dead, continue to other methods
-        console.warn(`[SessionStore] Failed to kill PID ${session.pid}:`, error)
+        devLog.warn(`[SessionStore] Failed to kill PID ${session.pid}:`, error)
       }
     }
 
@@ -842,7 +843,7 @@ class SessionStore {
     if (session.isInTmux && session.tmuxTarget) {
       const killed = await killPane(session.tmuxTarget)
       if (killed) {
-        console.log(
+        devLog.log(
           `[SessionStore] Killed tmux pane for session ${sessionId.slice(0, 8)}`
         )
         this.updatePhase(sessionId, 'ended')
@@ -851,7 +852,7 @@ class SessionStore {
     }
 
     // Fallback: Just mark as ended
-    console.log(
+    devLog.log(
       `[SessionStore] No kill method available, marking session ${sessionId.slice(0, 8)} as ended`
     )
     this.updatePhase(sessionId, 'ended')
@@ -876,7 +877,7 @@ class SessionStore {
     }
 
     if (toRemove.length > 0) {
-      console.log(`[SessionStore] Archived ${toRemove.length} ended sessions`)
+      devLog.log(`[SessionStore] Archived ${toRemove.length} ended sessions`)
     }
   }
 
@@ -922,7 +923,7 @@ class SessionStore {
       this.cleanupStaleSessions()
     }, CLEANUP_INTERVAL_MS)
 
-    console.log('[SessionStore] Auto cleanup started')
+    devLog.log('[SessionStore] Auto cleanup started')
   }
 
   /**
@@ -932,7 +933,7 @@ class SessionStore {
     if (this.cleanupTimer) {
       clearInterval(this.cleanupTimer)
       this.cleanupTimer = null
-      console.log('[SessionStore] Auto cleanup stopped')
+      devLog.log('[SessionStore] Auto cleanup stopped')
     }
 
     // Flush any pending batched events
@@ -977,7 +978,7 @@ class SessionStore {
           // Only mark as ended if also inactive for the stale threshold
           // This prevents killing active sessions just because the spawner exited
           if (inactivityTime > STALE_THRESHOLD_MS) {
-            console.log(
+            devLog.log(
               `[SessionStore] Marking dead Cursor session ${sessionId.slice(0, 8)} as ended (PID ${session.pid} not alive, ${Math.round(inactivityTime / 1000)}s inactive)`
             )
             this.updatePhase(sessionId, 'ended')
@@ -992,7 +993,7 @@ class SessionStore {
             session.pid && this.isProcessAlive(session.pid)
 
           if (!cursorStillActive) {
-            console.log(
+            devLog.log(
               `[SessionStore] Marking inactive Cursor session ${sessionId.slice(0, 8)} as ended (${Math.round(inactivityTime / 1000)}s inactive, process dead)`
             )
             this.updatePhase(sessionId, 'ended')
@@ -1002,7 +1003,7 @@ class SessionStore {
               session.phase !== 'idle' &&
               session.phase !== 'waitingForInput'
             ) {
-              console.log(
+              devLog.log(
                 `[SessionStore] Cursor session ${sessionId.slice(0, 8)} inactive for ${Math.round(inactivityTime / 1000)}s, marking as idle`
               )
               this.updatePhase(sessionId, 'idle')
@@ -1024,7 +1025,7 @@ class SessionStore {
               const compactingDuration = now - compactingStartedAt
 
               if (compactingDuration > COMPACTING_TIMEOUT_MS) {
-                console.log(
+                devLog.log(
                   `[SessionStore] Compacting timed out for ${sessionId.slice(0, 8)} after ${Math.round(compactingDuration / 1000)}s, resetting to waitingForInput`
                 )
                 this.updatePhase(sessionId, 'waitingForInput')
@@ -1035,7 +1036,7 @@ class SessionStore {
           // Process is dead
         }
 
-        console.log(
+        devLog.log(
           `[SessionStore] Marking stale session ${sessionId.slice(0, 8)} as ended`
         )
         this.updatePhase(sessionId, 'ended')

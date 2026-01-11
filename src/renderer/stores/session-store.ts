@@ -8,6 +8,7 @@
 import { create } from 'zustand'
 import type { ClaudeSession, PermissionDecision } from 'shared/hook-types'
 import { PHASE_PRIORITY } from 'renderer/lib/constants'
+import { devLog } from 'renderer/lib/logger'
 
 const { App } = window
 
@@ -108,7 +109,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       // Store cleanup function
       set({ _cleanup: unsubscribe })
     } catch (error) {
-      console.error('[SessionStore] Failed to initialize:', error)
+      devLog.error('[SessionStore] Failed to initialize:', error)
       set({
         error:
           error instanceof Error ? error.message : 'Failed to load sessions',
@@ -165,7 +166,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     try {
       return await App.claudeSessions.terminate(sessionId, signal)
     } catch (error) {
-      console.error('[SessionStore] Failed to terminate session:', error)
+      devLog.error('[SessionStore] Failed to terminate session:', error)
       return false
     }
   },
@@ -175,7 +176,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     try {
       return await App.claudeSessions.remove(sessionId)
     } catch (error) {
-      console.error('[SessionStore] Failed to remove session:', error)
+      devLog.error('[SessionStore] Failed to remove session:', error)
       return false
     }
   },
@@ -185,7 +186,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     try {
       return await App.permissions.respond(sessionId, 'allow')
     } catch (error) {
-      console.error('[SessionStore] Failed to approve permission:', error)
+      devLog.error('[SessionStore] Failed to approve permission:', error)
       return false
     }
   },
@@ -195,7 +196,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     try {
       return await App.permissions.respond(sessionId, 'deny', { reason })
     } catch (error) {
-      console.error('[SessionStore] Failed to deny permission:', error)
+      devLog.error('[SessionStore] Failed to deny permission:', error)
       return false
     }
   },
@@ -205,7 +206,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     try {
       return await App.permissions.respond(sessionId, decision, options)
     } catch (error) {
-      console.error('[SessionStore] Failed to respond to permission:', error)
+      devLog.error('[SessionStore] Failed to respond to permission:', error)
       return false
     }
   },

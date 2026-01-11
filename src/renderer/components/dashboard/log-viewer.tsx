@@ -8,6 +8,7 @@ import { X } from 'lucide-react'
 import { SessionActionBar } from './session-action-bar'
 import type { AgentSession } from 'shared/ipc-protocol'
 import type { AgentStatus } from 'shared/types'
+import { devLog } from 'renderer/lib/logger'
 
 const { App } = window
 
@@ -60,7 +61,7 @@ export function LogViewer({ session, output, onClose }: LogViewerProps) {
     // Handle keyboard input - send to PTY
     const onDataDisposable = terminal.onData(data => {
       App.sessions.stdin(session.id, data).catch(err => {
-        console.error('Error sending stdin:', err)
+        devLog.error('Error sending stdin:', err)
       })
     })
 

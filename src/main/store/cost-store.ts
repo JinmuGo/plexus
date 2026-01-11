@@ -7,6 +7,7 @@
 
 import Database from 'better-sqlite3'
 import { app } from 'electron'
+import { devLog } from '../lib/utils'
 import { join, dirname } from 'node:path'
 import { mkdirSync, existsSync } from 'node:fs'
 import type {
@@ -48,7 +49,7 @@ class CostStore {
    */
   initialize(dbPath?: string): void {
     if (this.db) {
-      console.log('[CostStore] Already initialized')
+      devLog.log('[CostStore] Already initialized')
       return
     }
 
@@ -60,7 +61,7 @@ class CostStore {
       mkdirSync(dir, { recursive: true })
     }
 
-    console.log(`[CostStore] Connecting to database at ${this.dbPath}`)
+    devLog.log(`[CostStore] Connecting to database at ${this.dbPath}`)
 
     this.db = new Database(this.dbPath)
     this.db.pragma('journal_mode = WAL')
@@ -74,7 +75,7 @@ class CostStore {
     if (this.db) {
       this.db.close()
       this.db = null
-      console.log('[CostStore] Database connection closed')
+      devLog.log('[CostStore] Database connection closed')
     }
   }
 
@@ -118,7 +119,7 @@ class CostStore {
       recordedAt
     )
 
-    console.log(
+    devLog.log(
       `[CostStore] Recorded usage for session ${sessionId.slice(0, 8)}: $${costUsd.toFixed(4)}`
     )
 
@@ -186,7 +187,7 @@ class CostStore {
     )
 
     insertMany(records)
-    console.log(`[CostStore] Batch recorded ${records.length} usage records`)
+    devLog.log(`[CostStore] Batch recorded ${records.length} usage records`)
   }
 
   // ============================================================================
@@ -506,7 +507,7 @@ class CostStore {
     const result = stmt.run(cutoff)
 
     if (result.changes > 0) {
-      console.log(`[CostStore] Cleaned up ${result.changes} old usage records`)
+      devLog.log(`[CostStore] Cleaned up ${result.changes} old usage records`)
     }
 
     return result.changes

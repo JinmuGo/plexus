@@ -23,6 +23,7 @@ import {
   getHooksDir,
   getSettingsFile,
 } from '../constants/hooks/gemini'
+import { devLog } from '../lib/utils'
 
 // Compute paths at module level for convenience
 const GEMINI_DIR = getGeminiDir()
@@ -152,11 +153,11 @@ function readSettings(): GeminiSettings {
  * Write settings.json
  */
 function writeSettings(settings: GeminiSettings): void {
-  console.log(`[GeminiHookInstaller] Writing to ${SETTINGS_FILE}`)
+  devLog.log(`[GeminiHookInstaller] Writing to ${SETTINGS_FILE}`)
   if (!writeJsonSettings(SETTINGS_FILE, settings)) {
-    console.error('[GeminiHookInstaller] Failed to write settings')
+    devLog.error('[GeminiHookInstaller] Failed to write settings')
   } else {
-    console.log('[GeminiHookInstaller] Settings written successfully')
+    devLog.log('[GeminiHookInstaller] Settings written successfully')
   }
 }
 
@@ -207,11 +208,11 @@ export function isGeminiCliInstalled(): boolean {
  * Install the hook script and update settings
  */
 export async function installIfNeeded(): Promise<void> {
-  console.log('[GeminiHookInstaller] Checking hook installation...')
+  devLog.log('[GeminiHookInstaller] Checking hook installation...')
 
   // Check if Gemini CLI is installed
   if (!isGeminiCliInstalled()) {
-    console.log('[GeminiHookInstaller] Gemini CLI not found, skipping')
+    devLog.log('[GeminiHookInstaller] Gemini CLI not found, skipping')
     return
   }
 
@@ -225,8 +226,8 @@ export async function installIfNeeded(): Promise<void> {
 
   // Check if source exists
   if (!fileExists(sourcePath)) {
-    console.warn(`[GeminiHookInstaller] Source script not found: ${sourcePath}`)
-    console.warn(
+    devLog.warn(`[GeminiHookInstaller] Source script not found: ${sourcePath}`)
+    devLog.warn(
       '[GeminiHookInstaller] Hook script will need to be installed manually'
     )
     return
@@ -234,10 +235,10 @@ export async function installIfNeeded(): Promise<void> {
 
   // Copy script with executable permissions
   if (!copyScriptWithPermissions(sourcePath, destPath)) {
-    console.error('[GeminiHookInstaller] Failed to install script')
+    devLog.error('[GeminiHookInstaller] Failed to install script')
     return
   }
-  console.log(`[GeminiHookInstaller] Script installed: ${destPath}`)
+  devLog.log(`[GeminiHookInstaller] Script installed: ${destPath}`)
 
   // Update settings.json
   const settings = readSettings()
@@ -255,14 +256,14 @@ export async function installIfNeeded(): Promise<void> {
         // Add our hook to existing configs
         const newConfigs = generateHookConfig(config, command, matcher)
         hooks[name] = [...existingConfigs, ...newConfigs]
-        console.log(
+        devLog.log(
           `[GeminiHookInstaller] Added hook for ${name} (${matcher || 'no matcher'})`
         )
       }
     } else {
       // Create new hook entry
       hooks[name] = generateHookConfig(config, command, matcher)
-      console.log(
+      devLog.log(
         `[GeminiHookInstaller] Created hook for ${name} (${matcher || 'no matcher'})`
       )
     }
@@ -270,7 +271,7 @@ export async function installIfNeeded(): Promise<void> {
 
   settings.hooks = hooks
   writeSettings(settings)
-  console.log('[GeminiHookInstaller] Installation complete')
+  devLog.log('[GeminiHookInstaller] Installation complete')
 }
 
 /**
@@ -304,12 +305,12 @@ export function isInstalled(): boolean {
  * Uninstall hooks from settings.json and remove script
  */
 export async function uninstall(): Promise<void> {
-  console.log('[GeminiHookInstaller] Uninstalling hooks...')
+  devLog.log('[GeminiHookInstaller] Uninstalling hooks...')
 
   // Remove script
   const scriptPath = getDestScriptPath()
   if (removeFile(scriptPath)) {
-    console.log(`[GeminiHookInstaller] Script removed: ${scriptPath}`)
+    devLog.log(`[GeminiHookInstaller] Script removed: ${scriptPath}`)
   }
 
   // Update settings.json
@@ -317,7 +318,7 @@ export async function uninstall(): Promise<void> {
   const hooks = settings.hooks
 
   if (!hooks) {
-    console.log('[GeminiHookInstaller] No hooks to remove')
+    devLog.log('[GeminiHookInstaller] No hooks to remove')
     return
   }
 
@@ -351,7 +352,7 @@ export async function uninstall(): Promise<void> {
   }
 
   writeSettings(settings)
-  console.log('[GeminiHookInstaller] Uninstallation complete')
+  devLog.log('[GeminiHookInstaller] Uninstallation complete')
 }
 
 // Export singleton interface
