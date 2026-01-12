@@ -2,6 +2,8 @@
 
 **AI Agent Observability Platform** - A desktop dashboard to monitor and control multiple AI agents in real-time.
 
+<img width="1552" height="982" alt="image" src="https://github.com/user-attachments/assets/72991f65-d002-4dd0-82fb-d2a325d4614d" />
+
 > **Note**: This project is in early development (v0.1.0).
 
 ## Features
