@@ -1,4 +1,16 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+
+// Mock devLog - must be inlined since vi.mock is hoisted
+vi.mock('../lib/utils', () => ({
+  devLog: {
+    log: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  },
+}))
+
 import { sessionStore } from './sessions'
 import type { HookEvent } from 'shared/hook-types'
 

@@ -19,6 +19,17 @@ vi.mock('./platform-focus', () => ({
   activateWindowByProcess: vi.fn(),
 }))
 
+// Mock devLog
+vi.mock('../lib/utils', () => ({
+  devLog: {
+    log: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  },
+}))
+
 import { jumpToAgent, selectActiveAgent } from './jump-to-agent'
 import { focusPane, focusByTty, focusCursor } from '../tmux/target-finder'
 import { activateTerminalApp, activateWindowByProcess } from './platform-focus'

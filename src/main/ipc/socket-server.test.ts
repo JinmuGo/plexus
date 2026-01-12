@@ -17,6 +17,20 @@ vi.mock('node:fs', () => ({
   chmodSync: vi.fn(),
 }))
 
+// Mock devLog - must be inlined since vi.mock is hoisted
+vi.mock('../lib/utils', () => ({
+  devLog: {
+    log: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  },
+}))
+
+// Import mocked devLog for test assertions
+import { devLog } from '../lib/utils'
+
 describe('SocketServer', () => {
   let socketServer: ReturnType<typeof createSocketServer>
 
@@ -82,9 +96,9 @@ describe('SocketServer', () => {
 
     it('should not start twice', () => {
       socketServer.start()
-      const consoleSpy = vi.spyOn(console, 'log')
+      vi.mocked(devLog.log).mockClear()
       socketServer.start()
-      expect(consoleSpy).toHaveBeenCalledWith(
+      expect(devLog.log).toHaveBeenCalledWith(
         '[SocketServer] Server already running'
       )
     })
