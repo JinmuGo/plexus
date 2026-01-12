@@ -172,42 +172,6 @@ export default defineConfig(({ mode }) => {
 
           output: {
             dir: resolve(devPath, 'renderer'),
-            // Production optimizations
-            ...(isProd && {
-              manualChunks: (id: string) => {
-                // React core
-                if (id.includes('node_modules/react')) {
-                  return 'vendor-react'
-                }
-                // UI framework
-                if (id.includes('framer-motion')) {
-                  return 'vendor-animation'
-                }
-                if (id.includes('lucide-react')) {
-                  return 'vendor-icons'
-                }
-                // Radix UI components (used by shadcn)
-                if (id.includes('@radix-ui')) {
-                  return 'vendor-radix'
-                }
-                // Charts
-                if (id.includes('recharts') || id.includes('d3')) {
-                  return 'vendor-charts'
-                }
-                // State management
-                if (id.includes('zustand')) {
-                  return 'vendor-state'
-                }
-                // Utilities
-                if (
-                  id.includes('clsx') ||
-                  id.includes('tailwind-merge') ||
-                  id.includes('class-variance-authority')
-                ) {
-                  return 'vendor-utils'
-                }
-              },
-            }),
           },
         },
       },
