@@ -7,9 +7,27 @@ import injectProcessEnvPlugin from 'rollup-plugin-inject-process-env'
 import tsconfigPathsPlugin from 'vite-tsconfig-paths'
 import reactPlugin from '@vitejs/plugin-react-swc'
 import { visualizer } from 'rollup-plugin-visualizer'
+import type { Plugin } from 'vite'
 
 import { settings } from './src/renderer/lib/electron-router-dom'
 import { main, resources, version } from './package.json'
+
+/**
+ * Vite plugin to remove crossorigin attribute from scripts in production.
+ * The crossorigin attribute causes loading failures when using file:// protocol
+ * in Electron production builds (blank screen issue).
+ * @see https://github.com/vitejs/vite/issues/6648
+ */
+function removeCrossOriginPlugin(): Plugin {
+  return {
+    name: 'remove-crossorigin',
+    enforce: 'post',
+    transformIndexHtml(html) {
+      // Remove crossorigin attribute from all tags
+      return html.replace(/ crossorigin/g, '')
+    },
+  }
+}
 
 const [nodeModules, devFolder] = normalize(dirname(main)).split(/\/|\\/g)
 const devPath = [nodeModules, devFolder].join('/')
@@ -117,6 +135,8 @@ export default defineConfig(({ mode }) => {
             ]
           : []),
         reactPlugin(),
+        // Remove crossorigin attribute in production to fix file:// protocol issues
+        ...(isProd ? [removeCrossOriginPlugin()] : []),
       ],
 
       publicDir: resolve(resources, 'public'),
