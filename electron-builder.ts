@@ -62,9 +62,11 @@ export default {
     artifactName,
     icon: `${resources}/build/icons/icon.icns`,
     category: 'public.app-category.utilities',
-    target: ['zip', 'dmg', 'dir'],
+    target: ['zip', 'dmg'],
     hardenedRuntime: true,
     gatekeeperAssess: false,
+    entitlements: `${resources}/build/entitlements.mac.plist`,
+    entitlementsInherit: `${resources}/build/entitlements.mac.plist`,
     notarize: true,
   },
 
