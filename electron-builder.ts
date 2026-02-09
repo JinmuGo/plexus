@@ -65,9 +65,7 @@ export default {
     target: ['zip', 'dmg', 'dir'],
     hardenedRuntime: true,
     gatekeeperAssess: false,
-    notarize: {
-      teamId: process.env.APPLE_TEAM_ID,
-    } as any,
+    notarize: true,
   },
 
   linux: {
