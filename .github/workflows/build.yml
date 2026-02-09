@@ -56,8 +56,11 @@ jobs:
       - name: Build (macOS)
         if: runner.os == 'macOS'
         env:
-          # Disable auto code signing discovery - use ad-hoc signing
-          CSC_IDENTITY_AUTO_DISCOVERY: false
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
         run: pnpm build --${{ matrix.arch }} --publish never
 
       - name: Build (Windows)

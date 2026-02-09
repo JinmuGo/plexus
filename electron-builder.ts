@@ -63,6 +63,11 @@ export default {
     icon: `${resources}/build/icons/icon.icns`,
     category: 'public.app-category.utilities',
     target: ['zip', 'dmg', 'dir'],
+    hardenedRuntime: true,
+    gatekeeperAssess: false,
+    notarize: {
+      teamId: process.env.APPLE_TEAM_ID,
+    } as any,
   },
 
   linux: {
